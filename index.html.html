@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>射出成型機智慧選型專家系統 (Expert Advisor)</title>
+  <!-- Tailwind CSS & Vue 3 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    [v-cloak] { display: none; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen">
+  <div id="app" v-cloak class="max-w-md mx-auto bg-white min-h-screen shadow-xl flex flex-col pb-10">
+    
+    <!-- 頂部 Header -->
+    <header class="bg-slate-900 text-white p-4 sticky top-0 z-20 shadow-md">
+      <div class="flex justify-between items-center">
+        <h1 class="text-base font-bold flex items-center gap-2">
+          <span class="text-xl">⚙️</span> 射出機智慧選型專家系統
+        </h1>
+        <span class="bg-blue-600 text-xs px-2 py-0.5 rounded font-mono">v1.3</span>
+      </div>
+      <p class="text-xs text-slate-400 mt-1">三柱診斷算法 • 透明計算鏈 • 產能與料桶診斷</p>
+    </header>
+
+    <!-- 導航 Tabs (5大模式) -->
+    <div class="grid grid-cols-5 bg-slate-200 text-[11px] font-semibold text-center border-b">
+      <button @click="mode = 1" :class="mode === 1 ? 'bg-white text-blue-600 border-b-2 border-blue-600 font-bold' : 'text-slate-600'" class="py-2.5 px-0.5">精準數據</button>
+      <button @click="mode = 2" :class="mode === 2 ? 'bg-white text-blue-600 border-b-2 border-blue-600 font-bold' : 'text-slate-600'" class="py-2.5 px-0.5">2D尺寸</button>
+      <button @click="mode = 3" :class="mode === 3 ? 'bg-white text-blue-600 border-b-2 border-blue-600 font-bold' : 'text-slate-600'" class="py-2.5 px-0.5">克重+穴數</button>
+      <button @click="mode = 4" :class="mode === 4 ? 'bg-white text-blue-600 border-b-2 border-blue-600 font-bold' : 'text-slate-600'" class="py-2.5 px-0.5">3D圖檔</button>
+      <button @click="mode = 5" :class="mode === 5 ? 'bg-white text-blue-600 border-b-2 border-blue-600 font-bold' : 'text-slate-600'" class="py-2.5 px-0.5">舊機置換</button>
+    </div>
+
+    <!-- 主表單輸入區 -->
+    <main class="p-4 flex-1 space-y-4">
+
+      <!-- 模式 1：精準數據 -->
+      <div v-if="mode === 1" class="space-y-3 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+        <div class="text-xs font-bold text-blue-800 border-b border-blue-200 pb-1">模式 1：已知投影面積與總克重</div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">成品總投影面積 (cm²)</label>
+          <input type="number" v-model.number="form1.area" placeholder="例: 280" class="w-full p-2 border rounded text-sm outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">單次總射速克重 (成品+水口 g)</label>
+          <input type="number" v-model.number="form1.weight" placeholder="例: 150" class="w-full p-2 border rounded text-sm outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+      </div>
+
+      <!-- 模式 2：2D 外觀尺寸 -->
+      <div v-if="mode === 2" class="space-y-3 bg-amber-50/50 p-3 rounded-lg border border-amber-100">
+        <div class="text-xs font-bold text-amber-800 border-b border-amber-200 pb-1">模式 2：只有長寬高外觀尺寸</div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">長 (mm)</label>
+            <input type="number" v-model.number="form2.length" placeholder="200" class="w-full p-2 border rounded text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">寬 (mm)</label>
+            <input type="number" v-model.number="form2.width" placeholder="150" class="w-full p-2 border rounded text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">平均壁厚 (mm)</label>
+            <input type="number" v-model.number="form2.thickness" placeholder="2.0" class="w-full p-2 border rounded text-sm">
+          </div>
+        </div>
+        <div class="text-xs text-amber-700 bg-amber-100/60 p-2 rounded">
+          💡 推算投影面積：<span class="font-bold">{{ calcForm2Area }} cm²</span>
+        </div>
+      </div>
+
+      <!-- 模式 3：單個克重 + 穴數 -->
+      <div v-if="mode === 3" class="space-y-3 bg-emerald-50/50 p-3 rounded-lg border border-emerald-100">
+        <div class="text-xs font-bold text-emerald-800 border-b border-emerald-200 pb-1">模式 3：客戶只有成品 (單件克重 + 穴數)</div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">單件成品重量 (g)</label>
+            <input type="number" v-model.number="form3.singleWeight" placeholder="例: 35" class="w-full p-2 border rounded text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">模具開穴數 (Cavities)</label>
+            <input type="number" v-model.number="form3.cavities" placeholder="例: 4" class="w-full p-2 border rounded text-sm">
+          </div>
+        </div>
+        <div class="text-xs text-emerald-700 bg-emerald-100/60 p-2 rounded flex justify-between">
+          <span>總成品重: {{ (form3.singleWeight || 0) * (form3.cavities || 1) }} g</span>
+          <span class="font-bold">預估總射量 (含15%水口): {{ calcForm3TotalWeight }} g</span>
+        </div>
+      </div>
+
+      <!-- 模式 4：3D 圖檔狀態 -->
+      <div v-if="mode === 4" class="space-y-3 bg-purple-50/50 p-3 rounded-lg border border-purple-100">
+        <div class="text-xs font-bold text-purple-800 border-b border-purple-200 pb-1">模式 4：3D CAD 圖檔軟體數據</div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">3D 導出總體積 (cm³)</label>
+          <input type="number" v-model.number="form4.volume" placeholder="例: 120" class="w-full p-2 border rounded text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">3D 投影斷面積 (cm²)</label>
+          <input type="number" v-model.number="form4.projArea" placeholder="例: 310" class="w-full p-2 border rounded text-sm">
+        </div>
+      </div>
+
+      <!-- 模式 5：舊機置換 -->
+      <div v-if="mode === 5" class="space-y-3 bg-slate-100 p-3 rounded-lg border border-slate-300">
+        <div class="text-xs font-bold text-slate-800 border-b border-slate-200 pb-1">模式 5：客戶舊機器噸數對標</div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">客戶現有舊機噸數 (Ton)</label>
+          <input type="number" v-model.number="form5.oldTonnage" placeholder="例: 160" class="w-full p-2 border rounded text-sm">
+        </div>
+      </div>
+
+      <!-- 共用參數：塑料與模具尺寸 -->
+      <div class="border-t pt-3 space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">塑料材質 (含比重與鎖模係數)</label>
+          <select v-model="material" class="w-full p-2 border rounded text-sm bg-white font-medium">
+            <option value="PP">PP (聚丙烯) - 鎖模: 0.35 | 密度: 0.91</option>
+            <option value="ABS">ABS (丙烯腈) - 鎖模: 0.45 | 密度: 1.05</option>
+            <option value="PET">PET (聚酯/瓶胚) - 鎖模: 0.65 | 密度: 1.38 [高壓/高容積]</option>
+            <option value="PC">PC (聚碳酸酯) - 鎖模: 0.65 | 密度: 1.20 [高射壓]</option>
+            <option value="PA_GF">PA+玻纖 - 鎖模: 0.70 | 密度: 1.35 [高流阻]</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">模具外觀寬度 (mm)</label>
+            <input type="number" v-model.number="moldWidth" placeholder="例: 420" class="w-full p-2 border rounded text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">模具外觀高度 (mm)</label>
+            <input type="number" v-model.number="moldHeight" placeholder="例: 420" class="w-full p-2 border rounded text-sm">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">成品平均壁厚 (mm) [用於計算週期]</label>
+          <input type="number" v-model.number="avgWallThickness" placeholder="例: 2.0" class="w-full p-2 border rounded text-sm">
+        </div>
+      </div>
+
+      <!-- 開始計算按鈕 -->
+      <button @click="calculate" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-blue-700 active:scale-[0.99] transition text-sm">
+        ⚡ 執行全流程診斷與產能推算
+      </button>
+
+      <!-- 診斷結果與詳細計算鏈卡片 -->
+      <div v-if="result" class="mt-6 border-t-2 border-blue-600 pt-4 space-y-4">
+        
+        <!-- 核心推薦卡片 -->
+        <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-4 rounded-xl shadow-md">
+          <div class="text-xs text-blue-400 font-bold uppercase tracking-wider">智能選型推薦結果</div>
+          <div class="text-2xl font-black mt-1 text-white">{{ result.machineModel }}</div>
+          <div class="text-xs text-slate-300 mt-2 flex flex-wrap gap-2">
+            <span class="bg-slate-700 px-2 py-0.5 rounded">射座: {{ result.screwCode }}</span>
+            <span class="bg-slate-700 px-2 py-0.5 rounded">螺桿直徑: {{ result.screwDia }} mm</span>
+            <span class="bg-blue-600 text-white px-2 py-0.5 rounded font-bold">噸數: {{ result.selectedTonnage }} T</span>
+          </div>
+        </div>
+
+        <!-- 3維度快速診斷號誌 -->
+        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+          <div class="p-2 rounded border font-bold" :class="result.tonnageOk ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'">
+            <div>鎖模力</div>
+            <div class="text-sm">{{ result.tonnageOk ? '✅ 合格' : '⚠️ 升級' }}</div>
+          </div>
+          <div class="p-2 rounded border font-bold" :class="result.fitmentOk ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'">
+            <div>柱間距 Fitment</div>
+            <div class="text-sm">{{ result.fitmentOk ? '✅ 容納' : '⚠️ 太大升級' }}</div>
+          </div>
+          <div class="p-2 rounded border font-bold" :class="result.utilizationOk ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'">
+            <div>射量利用率</div>
+            <div class="text-sm">{{ result.utilization }}%</div>
+          </div>
+        </div>
+
+        <!-- 產能與週期、料桶診斷卡片 (新增功能) -->
+        <div class="bg-emerald-900 text-emerald-50 p-4 rounded-xl space-y-3 text-xs shadow-inner">
+          <div class="font-bold text-emerald-300 text-sm flex items-center gap-1 border-b border-emerald-800 pb-2">
+            <span>⏱️</span> 產能、週期與料桶品質診斷
+          </div>
+          <div class="grid grid-cols-2 gap-2 font-mono">
+            <div class="bg-emerald-950/60 p-2 rounded">
+              <div class="text-emerald-400 text-[10px]">預估總週期 (Cycle Time)</div>
+              <div class="text-base font-bold text-white">{{ prodMetrics.totalCycleTime }} 秒</div>
+            </div>
+            <div class="bg-emerald-950/60 p-2 rounded">
+              <div class="text-emerald-400 text-[10px]">預估每小時產能 (8穴換算)</div>
+              <div class="text-base font-bold text-white">{{ prodMetrics.hourlyOutputPcs }} pcs/hr</div>
+            </div>
+          </div>
+          <div class="space-y-1 pt-1 border-t border-emerald-800/60 text-[11px]">
+            <div>🛢️ 料桶一次加滿可打：<span class="font-bold text-white">{{ prodMetrics.shotsPerBarrel }} 模</span></div>
+            <div>⏳ 塑料料桶滯留時間：<span class="font-bold text-white">{{ prodMetrics.residencyTimeMin }} 分鐘</span></div>
+            <div class="text-amber-300 font-bold mt-1">診斷評價：{{ prodMetrics.residencyStatus }} - {{ prodMetrics.residencyWarning }}</div>
+          </div>
+        </div>
+
+        <!-- 計算過程詳細展示卡片 -->
+        <div class="bg-slate-800 text-slate-100 p-4 rounded-xl space-y-3 text-xs shadow-inner">
+          <div class="font-bold text-amber-400 text-sm flex items-center gap-1 border-b border-slate-700 pb-2">
+            <span>📐</span> 系統選型詳細計算過程鏈
+          </div>
+
+          <div class="space-y-1">
+            <div class="text-blue-300 font-bold">1. 鎖模力 (Locking Force) 演算：</div>
+            <div class="pl-2 border-l-2 border-blue-500 font-mono text-[11px] text-slate-300 space-y-0.5">
+              <div>有效投影面積 = {{ calcChain.area }} cm²</div>
+              <div>材料鎖模係數 ({{ material }}) = {{ calcChain.coeff }} ton/cm²</div>
+              <div>安全係數 (1.2x) 需求 = {{ calcChain.safetyTonnage }} ton</div>
+              <div class="text-amber-300 font-bold">➔ 鎖模力基準選定：{{ calcChain.baseTonnage }} Ton</div>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <div class="text-blue-300 font-bold">2. 模具空間與內柱距 (Tie-bar) 檢核：</div>
+            <div class="pl-2 border-l-2 border-blue-500 font-mono text-[11px] text-slate-300 space-y-0.5">
+              <div>客戶模具尺寸 = {{ moldWidth || 0 }} × {{ moldHeight || 0 }} mm</div>
+              <div>基準機型柱間距 = {{ calcChain.baseTieBar }} mm</div>
+              <div :class="calcChain.fitmentUpTier ? 'text-red-400 font-bold' : 'text-green-400'">
+                {{ calcChain.fitmentUpTier ? '➔ 警報：模具尺寸過大！觸發 Up-tier 跨階升級。' : '➔ 柱間距過關，容納正常。' }}
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <div class="text-blue-300 font-bold">3. 射出量與料管容積演算：</div>
+            <div class="pl-2 border-l-2 border-blue-500 font-mono text-[11px] text-slate-300 space-y-0.5">
+              <div>預估總射量 = {{ calcChain.totalShotWeight }} g | 密度 = {{ calcChain.density }} g/cm³</div>
+              <div>理論所需射出容積 = {{ calcChain.reqVolume }} cm³ (料管容量: {{ calcChain.machineCapacity }} cm³)</div>
+              <div class="text-emerald-300 font-bold">➔ 容量利用率 = {{ result.utilization }}% (黃金區間 20%~80%)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 專家診斷說明 -->
+        <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs space-y-1">
+          <div class="font-bold text-blue-900">💡 專家診斷說明（業務溝通建議）：</div>
+          <p class="text-slate-700 leading-relaxed">{{ result.reason }}</p>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const { createApp } = Vue
+    createApp({
+      data() {
+        return {
+          mode: 3,
+          material: 'PET',
+          form1: { area: 300, weight: 160 },
+          form2: { length: 200, width: 150, thickness: 2.5 },
+          form3: { singleWeight: 28, cavities: 8 },
+          form4: { volume: 180, projArea: 320 },
+          form5: { oldTonnage: 180 },
+          moldWidth: 450,
+          moldHeight: 450,
+          avgWallThickness: 2.5,
+          result: null,
+          calcChain: {},
+          prodMetrics: {}
+        }
+      },
+      computed: {
+        calcForm2Area() {
+          return ((this.form2.length * this.form2.width) / 100).toFixed(1);
+        },
+        calcForm3TotalWeight() {
+          let base = (this.form3.singleWeight || 0) * (this.form3.cavities || 1);
+          return Math.round(base * 1.15);
+        }
+      },
+      methods: {
+        calculate() {
+          const matCoeffs = { PP: 0.35, ABS: 0.45, PET: 0.65, PC: 0.65, PA_GF: 0.70 };
+          const matDensities = { PP: 0.91, ABS: 1.05, PET: 1.38, PC: 1.20, PA_GF: 1.35 };
+
+          let coeff = matCoeffs[this.material] || 0.45;
+          let density = matDensities[this.material] || 1.0;
+
+          let area = 0;
+          let totalWeight = 0;
+
+          if (this.mode === 1) {
+            area = this.form1.area || 100;
+            totalWeight = this.form1.weight || 50;
+          } else if (this.mode === 2) {
+            area = (this.form2.length * this.form2.width) / 100;
+            let vol = (area * (this.form2.thickness || 2) / 10);
+            totalWeight = Math.round(vol * density * 1.2);
+          } else if (this.mode === 3) {
+            totalWeight = this.calcForm3TotalWeight;
+            area = Math.round(totalWeight * 1.5);
+          } else if (this.mode === 4) {
+            area = this.form4.projArea || 200;
+            totalWeight = Math.round((this.form4.volume || 100) * density);
+          } else if (this.mode === 5) {
+            area = Math.round((this.form5.oldTonnage || 100) / coeff);
+            totalWeight = 200;
+          }
+
+          let rawTonnage = (area * coeff).toFixed(1);
+          let safetyTonnage = (rawTonnage * 1.2).toFixed(1);
+          
+          const tonnages = [50, 80, 110, 140, 180, 250, 320, 420, 550];
+          const tieBars = { 50: 310, 80: 360, 110: 410, 140: 460, 180: 510, 250: 580, 320: 660, 420: 760, 550: 860 };
+          const capacities = { 50: 130, 80: 181, 110: 266, 140: 391, 180: 549, 250: 770, 320: 1149, 420: 1702, 550: 2400 };
+
+          let baseTonnage = tonnages.find(t => t >= safetyTonnage) || 550;
+          let selectedTonnage = baseTonnage;
+          let fitmentUpTier = false;
+
+          let mW = this.moldWidth || 0;
+          let mH = this.moldHeight || 0;
+          let baseTieBar = tieBars[baseTonnage];
+
+          if (mW > baseTieBar || mH > baseTieBar) {
+            fitmentUpTier = true;
+            let matched = tonnages.find(t => tieBars[t] >= mW && tieBars[t] >= mH);
+            selectedTonnage = matched || 550;
+          }
+
+          let reqVolume = (totalWeight / density).toFixed(1);
+          let machineCap = capacities[selectedTonnage];
+          let util = Math.round((reqVolume / machineCap) * 100);
+
+          // 計算週期與產能
+          let wallT = this.avgWallThickness || 2.0;
+          let coolingCoeff = (this.material === 'PET' || this.material === 'PC') ? 2.5 : 1.8;
+          let tCooling = Math.max(3.0, coolingCoeff * Math.pow(wallT, 2));
+          let tFill = 1.5;
+          let tHold = wallT * 1.2;
+          let tDry = selectedTonnage <= 140 ? 2.0 : (selectedTonnage <= 320 ? 3.2 : 4.5);
+          let totalCycleTime = Math.round((tCooling + tFill + tHold + tDry) * 10) / 10;
+
+          let barrelCapacityWeight = machineCap * density * 0.85;
+          let shotsPerBarrel = Math.round((barrelCapacityWeight / totalWeight) * 10) / 10;
+          let residencyTimeMin = Math.round(((shotsPerBarrel * totalCycleTime) / 60) * 10) / 10;
+
+          let residencyStatus = "✅ 最佳";
+          let residencyWarning = "塑料熔融充分且無分解風險。";
+          if (shotsPerBarrel < 1.5) {
+            residencyStatus = "⚠️ 塑化容量不足";
+            residencyWarning = "料桶容積過小，停留時間太短，可能導致塑化不均。";
+          } else if (residencyTimeMin > 15) {
+            residencyStatus = "⚠️ 滯留過久";
+            residencyWarning = `滯留高達 ${residencyTimeMin} 分鐘，高溫易使塑料熱分解。`;
+          }
+
+          this.prodMetrics = {
+            totalCycleTime: totalCycleTime,
+            shotsPerBarrel: shotsPerBarrel,
+            residencyTimeMin: residencyTimeMin,
+            residencyStatus: residencyStatus,
+            residencyWarning: residencyWarning,
+            hourlyOutputPcs: Math.round((3600 / totalCycleTime) * (this.form3.cavities || 1))
+          };
+
+          this.calcChain = {
+            area: area,
+            coeff: coeff,
+            safetyTonnage: safetyTonnage,
+            baseTonnage: baseTonnage,
+            baseTieBar: baseTieBar + 'x' + baseTieBar,
+            fitmentUpTier: fitmentUpTier,
+            totalShotWeight: totalWeight,
+            density: density,
+            reqVolume: reqVolume,
+            machineCapacity: machineCap
+          };
+
+          let reason = `依據 ${this.material} 材質計算，理論鎖模力需求為 ${safetyTonnage} Ton。`;
+          if (fitmentUpTier) {
+            reason += ` 註：因模具尺寸 (${mW}x${mH}mm) 超出 ${baseTonnage}T 機型柱間距，系統已自動升級推薦 ${selectedTonnage}T 機型。`;
+          } else {
+            reason += ` 模具尺寸可順利容納於 ${selectedTonnage}T 機型內。`;
+          }
+
+          this.result = {
+            machineModel: selectedTonnage + "EH-DS (伺服節能型)",
+            screwCode: selectedTonnage >= 250 ? "i32" : "i18",
+            screwDia: selectedTonnage >= 250 ? 52 : 40,
+            selectedTonnage: selectedTonnage,
+            tonnageOk: selectedTonnage >= safetyTonnage,
+            fitmentOk: !fitmentUpTier,
+            utilizationOk: util >= 20 && util <= 80,
+            utilization: util,
+            reason: reason
+          };
+        }
+      }
+    }).mount('#app')
+  </script>
+</body>
+</html>
