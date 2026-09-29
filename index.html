@@ -10,6 +10,45 @@
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     [v-cloak] { display: none; }
+    .omc-brand {
+      position: relative;
+      display: inline-block;
+      overflow: hidden;
+      color: #bfdbfe;
+      text-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+      letter-spacing: 0.12em;
+    }
+    .omc-brand::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      transform: translateX(-140%) skewX(-18deg);
+      background: linear-gradient(90deg, transparent, rgba(219, 234, 254, 0.8), transparent);
+      animation: omc-shine 4.8s ease-in-out infinite;
+    }
+    @keyframes omc-shine {
+      0%, 58% { transform: translateX(-140%) skewX(-18deg); }
+      82%, 100% { transform: translateX(140%) skewX(-18deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .omc-brand::after { animation: none; }
+    }
+    .pet-sprite {
+      width: 92px;
+      height: 92px;
+      flex: 0 0 92px;
+      border-radius: 18px;
+      border: 2px solid rgba(14, 116, 144, 0.18);
+      background-image: url('assets/omc-pet-dog.jfif');
+      background-repeat: no-repeat;
+      background-size: 300% 300%;
+      background-color: white;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+    }
+    .pet-info { background-position: 0% 0%; }
+    .pet-ok { background-position: 50% 50%; }
+    .pet-warning { background-position: 0% 100%; }
+    .pet-question { background-position: 100% 0%; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen">
@@ -17,6 +56,7 @@
     
     <!-- 頂部 Header -->
     <header class="bg-slate-900 text-white p-4 sticky top-0 z-20 shadow-md">
+      <div class="omc-brand mb-2 text-[11px] font-semibold uppercase">OMC 超群機械</div>
       <div class="flex justify-between items-center">
         <h1 class="text-base font-bold flex items-center gap-2">
           <span class="text-xl">⚙️</span> 射出機智慧選型專家系統
@@ -143,6 +183,88 @@
         </div>
       </div>
 
+      <!-- 所有模式共用：Cycle Time 即時預估 -->
+      <section class="rounded-xl border border-cyan-200 bg-cyan-50/70 p-3 text-xs">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <div class="font-bold text-cyan-900">⏱️ Cycle Time 即時預估</div>
+            <div class="mt-0.5 text-[11px] text-cyan-700">五種計算模式共用；輸入完整後自動更新</div>
+          </div>
+          <div v-if="cycleEstimate" class="shrink-0 rounded-lg bg-cyan-700 px-3 py-2 text-center text-white shadow-sm">
+            <div class="text-[10px] text-cyan-100">預估總週期</div>
+            <div class="text-lg font-black">{{ cycleEstimate.total }} 秒</div>
+          </div>
+        </div>
+
+        <div v-if="cycleEstimate" class="mt-3 space-y-2">
+          <div class="grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-4">
+            <div class="rounded bg-white p-2"><span class="text-slate-500">充填</span><br><b>{{ cycleEstimate.fill }} 秒</b></div>
+            <div class="rounded bg-white p-2"><span class="text-slate-500">保壓</span><br><b>{{ cycleEstimate.hold }} 秒</b></div>
+            <div class="rounded bg-white p-2"><span class="text-slate-500">冷卻</span><br><b>{{ cycleEstimate.cooling }} 秒</b></div>
+            <div class="rounded bg-white p-2"><span class="text-slate-500">開合模／頂出</span><br><b>{{ cycleEstimate.dry }} 秒</b></div>
+          </div>
+          <div class="rounded-lg border border-cyan-200 bg-white p-2">
+            <div class="flex items-center justify-between gap-2">
+              <div class="font-bold text-cyan-900">工序時間微調（秒）</div>
+              <button @click="resetCycleAdjustments" class="rounded border border-cyan-200 px-2 py-1 text-[10px] font-bold text-cyan-700 hover:bg-cyan-50">歸零</button>
+            </div>
+            <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <label class="text-[10px] text-slate-500">充填 ±
+                <input type="number" step="0.1" v-model.number="cycleAdjustments.fill" class="mt-1 w-full rounded border p-1.5 text-sm text-slate-800">
+              </label>
+              <label class="text-[10px] text-slate-500">保壓 ±
+                <input type="number" step="0.1" v-model.number="cycleAdjustments.hold" class="mt-1 w-full rounded border p-1.5 text-sm text-slate-800">
+              </label>
+              <label class="text-[10px] text-slate-500">冷卻 ±
+                <input type="number" step="0.1" v-model.number="cycleAdjustments.cooling" class="mt-1 w-full rounded border p-1.5 text-sm text-slate-800">
+              </label>
+              <label class="text-[10px] text-slate-500">開合模／頂出 ±
+                <input type="number" step="0.1" v-model.number="cycleAdjustments.dry" class="mt-1 w-full rounded border p-1.5 text-sm text-slate-800">
+              </label>
+            </div>
+            <div class="mt-2 text-[10px] text-slate-500">輸入正數增加時間、負數減少時間；總 Cycle Time 與下方產能同步更新。</div>
+          </div>
+          <details class="rounded-lg border border-cyan-200 bg-white p-2 text-slate-600">
+            <summary class="cursor-pointer font-bold text-cyan-800">怎麼計算 Cycle Time？</summary>
+            <div class="mt-2 space-y-1 leading-relaxed">
+              <div><b>總週期</b> = 充填時間 + 保壓時間 + 冷卻時間 + 開合模／頂出時間</div>
+              <div>充填時間：暫以 1.5 秒估算</div>
+              <div>保壓時間：平均壁厚 × 1.2</div>
+              <div>冷卻時間：材料冷卻係數 × 平均壁厚²（最低 3 秒）</div>
+              <div>開合模／頂出：依預估機台噸數取 2.0／3.2／4.5 秒</div>
+              <div class="pt-1 text-[10px] text-slate-500">目前預估機台：{{ cycleEstimate.tonnage }}T；材料係數：{{ cycleEstimate.coolingCoeff }}</div>
+            </div>
+          </details>
+        </div>
+        <div v-else class="mt-3 rounded-lg bg-white p-3 text-center text-slate-500">
+          請填完整目前模式、模具尺寸與平均壁厚，即可預估 Cycle Time。
+        </div>
+      </section>
+
+      <!-- OMC 寵物狗檢查模式 -->
+      <section class="overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 text-xs shadow-sm">
+        <button @click="petMode = !petMode" class="flex w-full items-center justify-between p-3 text-left">
+          <span>
+            <span class="font-bold text-amber-950">🐶 OMC 寵物狗檢查模式</span>
+            <span class="mt-0.5 block text-[11px] text-amber-700">提醒算式、輸入缺漏與需要重複確認的地方</span>
+          </span>
+          <span class="rounded-full px-2 py-1 text-[10px] font-bold" :class="petMode ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600'">{{ petMode ? '已開啟' : '已關閉' }}</span>
+        </button>
+        <div v-if="petMode" class="border-t border-amber-200 p-3">
+          <div class="flex items-start gap-3">
+            <div class="pet-sprite" :class="'pet-' + petState" role="img" :aria-label="'OMC 檢查狗狀態：' + petState"></div>
+            <div class="min-w-0 flex-1">
+              <div class="font-bold text-amber-950">檢查狗報告</div>
+              <ul class="mt-1 space-y-1 text-[11px] leading-relaxed text-slate-700">
+                <li v-for="(message, index) in petMessages" :key="index">• {{ message }}</li>
+              </ul>
+              <button @click="runPetCheck" class="mt-2 rounded-lg bg-amber-600 px-3 py-2 font-bold text-white shadow-sm hover:bg-amber-700">🔍 再檢查一次</button>
+              <span v-if="petCheckCount" class="ml-2 text-[10px] text-amber-700">已重複檢查 {{ petCheckCount }} 次</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- 開始計算按鈕 -->
       <button @click="calculate" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-blue-700 active:scale-[0.99] transition text-sm">
         ⚡ 執行全流程診斷與產能推算
@@ -262,6 +384,9 @@
           moldWidth: 450,
           moldHeight: 450,
           avgWallThickness: 2.5,
+          cycleAdjustments: { fill: 0, hold: 0, cooling: 0, dry: 0 },
+          petMode: true,
+          petCheckCount: 0,
           result: null,
           calcChain: {},
           prodMetrics: {}
@@ -274,9 +399,96 @@
         calcForm3TotalWeight() {
           let base = (this.form3.singleWeight || 0) * (this.form3.cavities || 1);
           return Math.round(base * 1.15);
+        },
+        cycleEstimate() {
+          const coeffs = { PP: 0.35, ABS: 0.45, PET: 0.65, PC: 0.65, PA_GF: 0.70 };
+          const coolingCoeffs = { PP: 1.8, ABS: 1.8, PET: 2.5, PC: 2.5, PA_GF: 1.8 };
+          const tonnages = [50, 80, 110, 140, 180, 250, 320, 420, 550];
+          const tieBars = { 50: 310, 80: 360, 110: 410, 140: 460, 180: 510, 250: 580, 320: 660, 420: 760, 550: 860 };
+
+          const commonComplete = this.material && this.moldWidth > 0 && this.moldHeight > 0 && this.avgWallThickness > 0;
+          if (!commonComplete) return null;
+
+          let area = 0;
+          if (this.mode === 1) {
+            if (!(this.form1.area > 0 && this.form1.weight > 0)) return null;
+            area = this.form1.area;
+          } else if (this.mode === 2) {
+            if (!(this.form2.length > 0 && this.form2.width > 0 && this.form2.thickness > 0)) return null;
+            area = (this.form2.length * this.form2.width) / 100;
+          } else if (this.mode === 3) {
+            if (!(this.form3.singleWeight > 0 && this.form3.cavities > 0)) return null;
+            area = this.calcForm3TotalWeight * 1.5;
+          } else if (this.mode === 4) {
+            if (!(this.form4.volume > 0 && this.form4.projArea > 0)) return null;
+            area = this.form4.projArea;
+          } else {
+            if (!(this.form5.oldTonnage > 0)) return null;
+            area = this.form5.oldTonnage / coeffs[this.material];
+          }
+
+          const requiredTonnage = area * coeffs[this.material] * 1.2;
+          let selectedTonnage = tonnages.find(t => t >= requiredTonnage) || 550;
+          const fitmentTonnage = tonnages.find(t => tieBars[t] >= this.moldWidth && tieBars[t] >= this.moldHeight) || 550;
+          selectedTonnage = Math.max(selectedTonnage, fitmentTonnage);
+
+          const wall = this.avgWallThickness;
+          const coolingCoeff = coolingCoeffs[this.material];
+          const fill = Math.max(0.1, 1.5 + (Number(this.cycleAdjustments.fill) || 0));
+          const hold = Math.max(0.1, wall * 1.2 + (Number(this.cycleAdjustments.hold) || 0));
+          const cooling = Math.max(0.1, Math.max(3, coolingCoeff * Math.pow(wall, 2)) + (Number(this.cycleAdjustments.cooling) || 0));
+          const dryBase = selectedTonnage <= 140 ? 2.0 : (selectedTonnage <= 320 ? 3.2 : 4.5);
+          const dry = Math.max(0.1, dryBase + (Number(this.cycleAdjustments.dry) || 0));
+          const round = value => Math.round(value * 10) / 10;
+
+          return {
+            fill: round(fill),
+            hold: round(hold),
+            cooling: round(cooling),
+            dry: round(dry),
+            total: round(fill + hold + cooling + dry),
+            tonnage: selectedTonnage,
+            coolingCoeff: coolingCoeff
+          };
+        },
+        petMessages() {
+          const messages = [];
+          if (!this.cycleEstimate) {
+            messages.push('目前資料尚未填完整，請先補齊當前模式、模具尺寸與平均壁厚。');
+            messages.push('資料不完整時不會推算 Cycle Time，避免產生誤導結果。');
+            return messages;
+          }
+
+          const adjusted = Object.values(this.cycleAdjustments).some(value => Math.abs(Number(value) || 0) > 0);
+          if (adjusted) messages.push('你已手動微調工序時間，請再次核對機台實測值與單位是否為秒。');
+          messages.push(`目前 Cycle Time 為 ${this.cycleEstimate.total} 秒；四段工序加總已重新核對。`);
+
+          if (!this.result) {
+            messages.push('即時週期已完成；請按下方藍色按鈕，繼續檢查鎖模力、柱間距與射量。');
+          } else {
+            if (!this.result.fitmentOk) messages.push('模具柱間距觸發升級，請重複確認模具寬高與實際機台規格。');
+            if (this.result.utilization < 20) messages.push(`射量利用率只有 ${this.result.utilization}%，低於 20% 黃金區間，請確認射座是否過大。`);
+            else if (this.result.utilization > 80) messages.push(`射量利用率達 ${this.result.utilization}%，高於 80%，請確認射出容量與安全餘量。`);
+            else messages.push(`射量利用率 ${this.result.utilization}% 位於 20%～80% 建議區間。`);
+            if (this.result.tonnageOk && this.result.fitmentOk && this.result.utilizationOk) messages.push('主要檢查項目均正常，可以進入現場試模確認。');
+          }
+          return messages;
+        },
+        petState() {
+          if (!this.cycleEstimate) return 'question';
+          if (this.result && (!this.result.fitmentOk || !this.result.utilizationOk || !this.result.tonnageOk)) return 'warning';
+          if (this.result && this.result.fitmentOk && this.result.utilizationOk && this.result.tonnageOk) return 'ok';
+          return 'info';
         }
       },
       methods: {
+        resetCycleAdjustments() {
+          this.cycleAdjustments = { fill: 0, hold: 0, cooling: 0, dry: 0 };
+        },
+        runPetCheck() {
+          this.petCheckCount += 1;
+          if (this.cycleEstimate) this.calculate();
+        },
         calculate() {
           const matCoeffs = { PP: 0.35, ABS: 0.45, PET: 0.65, PC: 0.65, PA_GF: 0.70 };
           const matDensities = { PP: 0.91, ABS: 1.05, PET: 1.38, PC: 1.20, PA_GF: 1.35 };
@@ -331,13 +543,7 @@
           let util = Math.round((reqVolume / machineCap) * 100);
 
           // 計算週期與產能
-          let wallT = this.avgWallThickness || 2.0;
-          let coolingCoeff = (this.material === 'PET' || this.material === 'PC') ? 2.5 : 1.8;
-          let tCooling = Math.max(3.0, coolingCoeff * Math.pow(wallT, 2));
-          let tFill = 1.5;
-          let tHold = wallT * 1.2;
-          let tDry = selectedTonnage <= 140 ? 2.0 : (selectedTonnage <= 320 ? 3.2 : 4.5);
-          let totalCycleTime = Math.round((tCooling + tFill + tHold + tDry) * 10) / 10;
+          let totalCycleTime = this.cycleEstimate ? this.cycleEstimate.total : 0;
 
           let barrelCapacityWeight = machineCap * density * 0.85;
           let shotsPerBarrel = Math.round((barrelCapacityWeight / totalWeight) * 10) / 10;
