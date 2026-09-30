@@ -35,7 +35,7 @@ input,select,textarea{min-height:42px}
 <header class="sticky top-0 z-30 bg-slate-950 px-4 py-4 text-white shadow-lg">
   <div class="flex items-center justify-between gap-3">
     <div><div class="text-[10px] font-bold tracking-[.18em] text-blue-300">OMC 超群機械</div><h1 class="text-lg font-black">Smart Injection Advisor</h1><div class="text-[10px] text-slate-400">客戶只回答知道的資料，系統負責把工程問題整理清楚</div></div>
-    <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v4.3</span>
+    <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v4.4</span>
   </div>
 </header>
 
@@ -58,22 +58,38 @@ input,select,textarea{min-height:42px}
   </div>
 
   <div class="grid grid-cols-6 gap-1 text-center text-[9px] font-bold text-slate-500">
-    <div v-for="n in 6" :key="n" class="rounded-full py-2" :class="step===n?'bg-blue-600 text-white':(step>n?'bg-blue-100 text-blue-700':'bg-slate-100')">{{n}} {{['資料','用途','產品','未來','模具','答案'][n-1]}}</div>
+    <div v-for="n in 6" :key="n" class="rounded-full py-2" :class="step===n?'bg-blue-600 text-white':(step>n?'bg-blue-100 text-blue-700':'bg-slate-100')">{{n}} {{(path==='engineering'?['資料','用途','工程','未來','模具','答案']:['資料','用途','產品','未來','選填','答案'])[n-1]}}</div>
   </div>
 
   <!-- STEP 1 -->
-  <section v-if="step===1" class="space-y-3">
-    <div class="text-center"><h2 class="text-xl font-black">你目前手上有哪一種資料？</h2><p class="mt-1 text-xs text-slate-500">兩種都可以得到答案，資料越完整，可信度越高。</p></div>
-    <div class="grid gap-3 sm:grid-cols-2">
-      <button @click="path='quick';step=2" class="qbtn">
-        <div class="text-2xl">🟦</div><div class="mt-2 text-base font-black">快速 AI 選型</div>
-        <p class="mt-1 text-xs leading-relaxed text-slate-500">我只有成品尺寸、重量、材料、水口或大概產量。沒有模具圖也可以開始。</p>
+  <section v-if="step===1" class="space-y-4">
+    <div class="text-center">
+      <h2 class="text-xl font-black">你現在是「先幫客戶選機」還是「拿工程資料做確認」？</h2>
+      <p class="mt-1 text-xs text-slate-500">兩條流程會問不同的問題，不再只是名稱不同。</p>
+    </div>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <button @click="path='quick';step=2" class="qbtn border-blue-200 bg-blue-50/30">
+        <div class="flex items-center justify-between"><div class="text-2xl">🟦</div><span class="badge bg-blue-600 text-white">客戶版</span></div>
+        <div class="mt-2 text-lg font-black">快速 AI 選型</div>
+        <p class="mt-1 text-xs leading-relaxed text-slate-600">只問客戶通常答得出的資料，AI 先做前期選型，不要求模具圖與工程實測數據。</p>
+        <div class="mt-3 rounded-xl bg-white p-3 text-left text-[10px] leading-relaxed text-slate-600">
+          <b>主要輸入：</b><br>
+          材料・單件重量・穴數 / 月需求・產品長寬厚・水口・Cycle
+        </div>
         <div class="mt-3 text-[10px] font-bold text-blue-700">適合：新客戶 / 業務初談 / 尚未開模</div>
+        <div class="mt-3 rounded-xl bg-blue-600 py-2 text-center text-xs font-black text-white">開始快速選型 →</div>
       </button>
-      <button @click="path='engineering';step=2" class="qbtn">
-        <div class="text-2xl">🟪</div><div class="mt-2 text-base font-black">工程精準選型</div>
-        <p class="mt-1 text-xs leading-relaxed text-slate-500">我有模具尺寸、CAD、總投影面積、每模重量或現有機台數據。</p>
-        <div class="mt-3 text-[10px] font-bold text-violet-700">適合：既有模具 / 換機 / 工程確認</div>
+
+      <button @click="path='engineering';step=2" class="qbtn border-violet-300 bg-violet-50/40">
+        <div class="flex items-center justify-between"><div class="text-2xl">🟪</div><span class="badge bg-violet-600 text-white">工程版</span></div>
+        <div class="mt-2 text-lg font-black">工程精準選型</div>
+        <p class="mt-1 text-xs leading-relaxed text-slate-600">使用模具與現場實測資料覆蓋 AI 估算，適合正式確認機台、射座、螺桿與安裝條件。</p>
+        <div class="mt-3 rounded-xl bg-white p-3 text-left text-[10px] leading-relaxed text-slate-600">
+          <b>工程資料：</b><br>
+          實測每模重量・總投影面積・實測射壓・計量時間・CAD・模厚 / 模重・開模 / 頂出・廠房尺寸
+        </div>
+        <div class="mt-3 text-[10px] font-bold text-violet-700">適合：既有模具 / 換機 / 工程確認 / 下單前複核</div>
+        <div class="mt-3 rounded-xl bg-violet-600 py-2 text-center text-xs font-black text-white">進入工程選型 →</div>
       </button>
     </div>
   </section>
@@ -128,29 +144,37 @@ input,select,textarea{min-height:42px}
 
   <!-- STEP 3 -->
   <section v-if="step===3" class="space-y-4">
-    <div><div class="text-xs font-bold text-blue-700">第 3 步</div><h2 class="text-xl font-black">產品、材料與產能資料</h2><p class="text-xs text-slate-500">客戶只填知道的資料；不知道的資料會在結果標成待確認。</p></div>
+    <div>
+      <div class="text-xs font-bold" :class="path==='engineering'?'text-violet-700':'text-blue-700'">第 3 步｜{{path==='engineering'?'工程資料':'客戶基本資料'}}</div>
+      <h2 class="text-xl font-black">{{path==='engineering'?'用實測資料把 AI 估算換成工程數據':'只填客戶現在知道的產品資料'}}</h2>
+      <p class="text-xs text-slate-500">{{path==='engineering'?'有實測就優先使用；沒有的欄位仍可暫時由 AI 估算並標記待確認。':'不知道工程數據沒關係，快速模式不會要求 CAD、射壓或總投影面積。'}}</p>
+    </div>
 
     <div class="card p-4 space-y-3">
-      <label class="block text-xs font-bold">材料
+      <div class="text-xs font-black">材料</div>
+      <label class="block text-xs font-bold">樹脂種類
         <select v-model="a.material" class="mt-1 w-full rounded-xl border p-2">
           <option>PP</option><option>ABS</option><option>PET</option><option>PC</option><option>PA</option><option>PA+GF</option><option>PBT</option><option>POM</option><option>其他</option>
         </select>
       </label>
-      <label class="block text-xs font-bold">材料牌號（不知道可空白）<input v-model="a.grade" class="mt-1 w-full rounded-xl border p-2" placeholder="例如 PET bottle grade / PC 某牌號"></label>
-      <div class="grid grid-cols-2 gap-2">
-        <label class="text-xs font-bold">填充 / 添加物<select v-model="a.fillerType" class="mt-1 w-full rounded-xl border p-2"><option value="none">無 / 不知道</option><option value="GF">玻纖 GF</option><option value="CF">碳纖 CF</option><option value="mineral">礦粉</option><option value="FR">阻燃 FR</option><option value="GF_FR">GF + FR</option></select></label>
-        <label class="text-xs font-bold">填充比例 %<input v-model.number="a.fillerPct" type="number" class="mt-1 w-full rounded-xl border p-2" placeholder="不知道可留 0"></label>
-      </div>
+      <template v-if="path==='engineering'">
+        <label class="block text-xs font-bold">材料牌號<input v-model="a.grade" class="mt-1 w-full rounded-xl border p-2" placeholder="例如 PET bottle grade / PC 某牌號"></label>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="text-xs font-bold">填充 / 添加物<select v-model="a.fillerType" class="mt-1 w-full rounded-xl border p-2"><option value="none">無 / 不知道</option><option value="GF">玻纖 GF</option><option value="CF">碳纖 CF</option><option value="mineral">礦粉</option><option value="FR">阻燃 FR</option><option value="GF_FR">GF + FR</option></select></label>
+          <label class="text-xs font-bold">填充比例 %<input v-model.number="a.fillerPct" type="number" class="mt-1 w-full rounded-xl border p-2"></label>
+        </div>
+      </template>
     </div>
 
     <div class="card p-4 space-y-3">
+      <div class="text-xs font-black">{{path==='engineering'?'產品 / Shot 資料':'產品重量與穴數'}}</div>
       <div class="grid grid-cols-2 gap-2">
         <label class="text-xs font-bold">單件重量 g<input v-model.number="a.partWeight" type="number" step="0.01" class="mt-1 w-full rounded-xl border p-2"></label>
         <label class="text-xs font-bold">穴數<select v-model="a.cavitiesKnown" class="mt-1 w-full rounded-xl border p-2"><option :value="true">知道</option><option :value="false">不知道</option></select></label>
       </div>
       <label v-if="a.cavitiesKnown" class="block text-xs font-bold">模具穴數<input v-model.number="a.cavities" type="number" min="1" class="mt-1 w-full rounded-xl border p-2"></label>
       <div v-else class="rounded-xl bg-blue-50 p-3">
-        <div class="text-[11px] font-bold text-blue-900">不知道穴數沒關係，系統可依月需求反推最低穴數</div>
+        <div class="text-[11px] font-bold text-blue-900">不知道穴數：用需求量反推最低穴數</div>
         <div class="mt-2 grid grid-cols-2 gap-2">
           <label class="text-[10px]">月需求 pcs<input v-model.number="a.monthlyDemand" type="number" class="mt-1 w-full rounded border p-2"></label>
           <label class="text-[10px]">每日工時<input v-model.number="a.hoursDay" type="number" class="mt-1 w-full rounded border p-2"></label>
@@ -158,10 +182,13 @@ input,select,textarea{min-height:42px}
           <label class="text-[10px]">目標 Cycle 秒<input v-model.number="a.cycle" type="number" step="0.1" class="mt-1 w-full rounded border p-2"></label>
         </div>
       </div>
+      <label v-if="path==='engineering'" class="block text-xs font-bold text-violet-900">實測每模總射出重量 g
+        <input v-model.number="a.actualShotWeight" type="number" step="0.01" class="mt-1 w-full rounded-xl border border-violet-300 bg-violet-50 p-2" placeholder="有實測就填；會優先覆蓋單件×穴數＋水口">
+      </label>
     </div>
 
     <div class="card p-4 space-y-3">
-      <div class="text-xs font-black">產品尺寸 / 流動難度</div>
+      <div class="text-xs font-black">產品尺寸 / 製程</div>
       <div class="grid grid-cols-3 gap-2">
         <label class="text-[10px]">投影長 mm<input v-model.number="a.projL" type="number" class="mt-1 w-full rounded border p-2"></label>
         <label class="text-[10px]">投影寬 mm<input v-model.number="a.projW" type="number" class="mt-1 w-full rounded border p-2"></label>
@@ -170,14 +197,21 @@ input,select,textarea{min-height:42px}
       <div class="grid grid-cols-2 gap-2">
         <label class="text-xs font-bold">澆道<select v-model="a.runnerType" class="mt-1 w-full rounded-xl border p-2"><option value="hot">熱澆道</option><option value="cold">冷澆道</option><option value="unknown">不知道</option></select></label>
         <label class="text-xs font-bold">水口重量 g<input v-model.number="a.runnerWeight" type="number" step="0.1" class="mt-1 w-full rounded-xl border p-2" placeholder="熱澆道可 0"></label>
-        <label class="text-xs font-bold">Cycle Time 秒<input v-model.number="a.cycle" type="number" step="0.1" class="mt-1 w-full rounded-xl border p-2" placeholder="不知道可空白"></label>
-        <label class="text-xs font-bold">可用計量 / 冷卻時間 秒<input v-model.number="a.meteringWindow" type="number" step="0.1" class="mt-1 w-full rounded-xl border p-2" placeholder="不知道可空白"></label>
+        <label class="text-xs font-bold">Cycle Time 秒<input v-model.number="a.cycle" type="number" step="0.1" class="mt-1 w-full rounded-xl border p-2"></label>
       </div>
-      <label class="block text-xs font-bold">現有實測最高射壓 kg/cm²（有才填）<input v-model.number="a.knownPressure" type="number" class="mt-1 w-full rounded-xl border p-2"></label>
-      <div v-if="path==='engineering'" class="border-t pt-3"><label class="block text-xs font-bold">已有總投影面積 cm²<input v-model.number="a.exactArea" type="number" class="mt-1 w-full rounded-xl border p-2" placeholder="有就優先使用"></label></div>
     </div>
 
-    <div class="flex gap-2"><button @click="step=2" class="w-1/3 rounded-xl border py-3 text-xs font-bold">← 上一步</button><button @click="step=4" class="w-2/3 rounded-xl bg-blue-600 py-3 text-xs font-black text-white">下一步：未來需求 →</button></div>
+    <div v-if="path==='engineering'" class="card border-violet-200 bg-violet-50/30 p-4 space-y-3">
+      <div class="flex items-center justify-between"><div class="text-xs font-black text-violet-950">工程量測值</div><span class="badge bg-violet-100 text-violet-800">優先覆蓋 AI 估算</span></div>
+      <label class="block text-xs font-bold">總投影面積 cm²<input v-model.number="a.exactArea" type="number" class="mt-1 w-full rounded-xl border p-2" placeholder="模具 / CAD 已知總投影面積"></label>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="text-xs font-bold">可用計量 / 冷卻時間 秒<input v-model.number="a.meteringWindow" type="number" step="0.1" class="mt-1 w-full rounded-xl border p-2"></label>
+        <label class="text-xs font-bold">現有實測最高射壓 kg/cm²<input v-model.number="a.knownPressure" type="number" class="mt-1 w-full rounded-xl border p-2"></label>
+      </div>
+      <div class="rounded-xl bg-white p-3 text-[10px] text-slate-600">這三項是工程版最有價值的資料：<b>實測 Shot、總投影面積、實測射壓</b>。有它們時，射座、螺桿與鎖模力會比快速模式可靠。</div>
+    </div>
+
+    <div class="flex gap-2"><button @click="step=2" class="w-1/3 rounded-xl border py-3 text-xs font-bold">← 上一步</button><button @click="step=4" class="w-2/3 rounded-xl py-3 text-xs font-black text-white" :class="path==='engineering'?'bg-violet-600':'bg-blue-600'">下一步：未來需求 →</button></div>
   </section>
 
   <!-- STEP 4 -->
@@ -213,46 +247,81 @@ input,select,textarea{min-height:42px}
 
   <!-- STEP 5 -->
   <section v-if="step===5" class="space-y-4">
-    <div><div class="text-xs font-bold text-blue-700">第 4 步</div><h2 class="text-xl font-black">{{path==='engineering'?'模具 / CAD 工程資料':'有模具資料就補，沒有也能繼續'}}</h2></div>
-
-    <div v-if="path==='engineering'" class="card border-violet-200 bg-violet-50/40 p-4">
-      <div class="text-xs font-black text-violet-950">上傳 2D CAD</div>
-      <input type="file" accept=".dxf,.dwg,.pdf,.png,.jpg,.jpeg" @change="handleCadUpload" class="mt-2 block w-full text-[10px]">
-      <p class="mt-2 text-[10px] text-slate-500">目前 ASCII DXF 可自動抓圖面外框做初判；DWG / PDF / 照片先記錄檔名，避免未可靠辨識就自動填數字。</p>
-      <div v-if="cad.name" class="mt-2 rounded-xl bg-white p-3 text-[10px]"><b>{{cad.name}}</b><br>{{cad.status}}<div v-if="cad.ok" class="mt-1 text-sm font-black">{{cad.widthMm}} × {{cad.heightMm}} mm</div><button v-if="cad.ok" @click="applyCad" class="mt-2 rounded bg-violet-600 px-3 py-2 font-bold text-white">確認並套用模具尺寸</button></div>
+    <div>
+      <div class="text-xs font-bold" :class="path==='engineering'?'text-violet-700':'text-blue-700'">第 5 步</div>
+      <h2 class="text-xl font-black">{{path==='engineering'?'模具 / CAD / 現場工程確認':'最後補充（全部選填）'}}</h2>
+      <p class="text-xs text-slate-500">{{path==='engineering'?'工程版用這一步檢查模具能不能裝、廠房放不放得下。':'快速版沒有模具資料也可以直接產生答案；有尺寸再補即可。'}}</p>
     </div>
 
-    <div class="card p-4 space-y-3">
-      <label class="flex items-center justify-between text-xs font-bold">我知道模具外形尺寸
-        <input type="checkbox" v-model="a.hasMold">
-      </label>
-      <div v-if="a.hasMold" class="grid grid-cols-2 gap-2">
-        <label class="text-[10px]">模具寬 mm<input v-model.number="a.moldW" type="number" class="mt-1 w-full rounded border p-2"></label>
-        <label class="text-[10px]">模具高 mm<input v-model.number="a.moldH" type="number" class="mt-1 w-full rounded border p-2"></label>
-        <label class="text-[10px]">模厚 mm<input v-model.number="a.moldD" type="number" class="mt-1 w-full rounded border p-2" placeholder="不知道可空白"></label>
-        <label class="text-[10px]">模重 kg<input v-model.number="a.moldKg" type="number" class="mt-1 w-full rounded border p-2" placeholder="不知道可空白"></label>
-        <label class="text-[10px]">需求開模距離 mm<input v-model.number="a.opening" type="number" class="mt-1 w-full rounded border p-2" placeholder="可空白"></label>
-        <label class="text-[10px]">頂出行程 mm<input v-model.number="a.eject" type="number" class="mt-1 w-full rounded border p-2" placeholder="可空白"></label>
+    <template v-if="path==='quick'">
+      <div class="card border-blue-200 bg-blue-50/30 p-4">
+        <div class="text-xs font-black">快速模式選填</div>
+        <label class="mt-3 flex items-center justify-between text-xs font-bold">我知道模具外形尺寸
+          <input type="checkbox" v-model="a.hasMold">
+        </label>
+        <div v-if="a.hasMold" class="mt-2 grid grid-cols-2 gap-2">
+          <label class="text-[10px]">模具寬 mm<input v-model.number="a.moldW" type="number" class="mt-1 w-full rounded border p-2"></label>
+          <label class="text-[10px]">模具高 mm<input v-model.number="a.moldH" type="number" class="mt-1 w-full rounded border p-2"></label>
+        </div>
+        <label class="mt-3 block text-[10px] font-bold">廠房淨高 mm（低樓高廠房建議填）
+          <input v-model.number="a.factoryH" type="number" class="mt-1 w-full rounded border p-2" placeholder="不知道可空白">
+        </label>
       </div>
-    </div>
-
-    <div class="card p-4">
-      <div class="text-xs font-black">廠房空間（選填）</div>
-      <div class="mt-2 grid grid-cols-3 gap-2">
-        <label class="text-[10px]">可用長 mm<input v-model.number="a.factoryL" type="number" class="mt-1 w-full rounded border p-2"></label>
-        <label class="text-[10px]">可用寬 mm<input v-model.number="a.factoryW" type="number" class="mt-1 w-full rounded border p-2"></label>
-        <label class="text-[10px]">可用高 mm<input v-model.number="a.factoryH" type="number" class="mt-1 w-full rounded border p-2"></label>
+      <div class="rounded-2xl bg-blue-600 p-4 text-white">
+        <div class="text-xs font-black">快速選型會怎麼做？</div>
+        <div class="mt-1 text-[10px] leading-relaxed text-blue-100">沒有 CAD、總投影面積、實測射壓時，系統會用產品資料做前期估算，並在結果與報告標示哪些項目仍需工程確認。</div>
       </div>
-    </div>
+    </template>
 
-    <div class="flex gap-2"><button @click="step=4" class="w-1/3 rounded-xl border py-3 text-xs font-bold">← 上一步</button><button @click="runAdvisor" class="w-2/3 rounded-xl bg-blue-600 py-3 text-sm font-black text-white">⚡ 產生 OMC AI 選型答案</button></div>
+    <template v-else>
+      <div class="card border-violet-200 bg-violet-50/40 p-4">
+        <div class="text-xs font-black text-violet-950">上傳 2D CAD</div>
+        <input type="file" accept=".dxf,.dwg,.pdf,.png,.jpg,.jpeg" @change="handleCadUpload" class="mt-2 block w-full text-[10px]">
+        <p class="mt-2 text-[10px] text-slate-500">目前 ASCII DXF 可自動抓圖面外框做初判；DWG / PDF / 照片先記錄檔名，避免未可靠辨識就自動填數字。</p>
+        <div v-if="cad.name" class="mt-2 rounded-xl bg-white p-3 text-[10px]"><b>{{cad.name}}</b><br>{{cad.status}}<div v-if="cad.ok" class="mt-1 text-sm font-black">{{cad.widthMm}} × {{cad.heightMm}} mm</div><button v-if="cad.ok" @click="applyCad" class="mt-2 rounded bg-violet-600 px-3 py-2 font-bold text-white">確認並套用模具尺寸</button></div>
+      </div>
+
+      <div class="card p-4 space-y-3">
+        <div class="text-xs font-black">模具完整資料</div>
+        <label class="flex items-center justify-between text-xs font-bold">我知道模具外形尺寸<input type="checkbox" v-model="a.hasMold"></label>
+        <div v-if="a.hasMold" class="grid grid-cols-2 gap-2">
+          <label class="text-[10px]">模具寬 mm<input v-model.number="a.moldW" type="number" class="mt-1 w-full rounded border p-2"></label>
+          <label class="text-[10px]">模具高 mm<input v-model.number="a.moldH" type="number" class="mt-1 w-full rounded border p-2"></label>
+          <label class="text-[10px]">模厚 mm<input v-model.number="a.moldD" type="number" class="mt-1 w-full rounded border p-2"></label>
+          <label class="text-[10px]">模重 kg<input v-model.number="a.moldKg" type="number" class="mt-1 w-full rounded border p-2"></label>
+          <label class="text-[10px]">需求開模距離 mm<input v-model.number="a.opening" type="number" class="mt-1 w-full rounded border p-2"></label>
+          <label class="text-[10px]">頂出行程 mm<input v-model.number="a.eject" type="number" class="mt-1 w-full rounded border p-2"></label>
+        </div>
+      </div>
+
+      <div class="card p-4">
+        <div class="text-xs font-black">廠房可用空間</div>
+        <div class="mt-2 grid grid-cols-3 gap-2">
+          <label class="text-[10px]">可用長 mm<input v-model.number="a.factoryL" type="number" class="mt-1 w-full rounded border p-2"></label>
+          <label class="text-[10px]">可用寬 mm<input v-model.number="a.factoryW" type="number" class="mt-1 w-full rounded border p-2"></label>
+          <label class="text-[10px]">可用高 mm<input v-model.number="a.factoryH" type="number" class="mt-1 w-full rounded border p-2"></label>
+        </div>
+      </div>
+
+      <div class="card border-violet-200 p-4">
+        <div class="text-xs font-black">工程資料檢查</div>
+        <div class="mt-2 grid grid-cols-2 gap-2 text-[10px]">
+          <div class="rounded-lg p-2" :class="Number(a.actualShotWeight)>0?'bg-green-50 text-green-800':'bg-amber-50 text-amber-800'">實測 Shot：{{Number(a.actualShotWeight)>0?'已輸入':'待補'}}</div>
+          <div class="rounded-lg p-2" :class="Number(a.exactArea)>0?'bg-green-50 text-green-800':'bg-amber-50 text-amber-800'">總投影面積：{{Number(a.exactArea)>0?'已輸入':'待補'}}</div>
+          <div class="rounded-lg p-2" :class="Number(a.knownPressure)>0?'bg-green-50 text-green-800':'bg-amber-50 text-amber-800'">實測射壓：{{Number(a.knownPressure)>0?'已輸入':'待補'}}</div>
+          <div class="rounded-lg p-2" :class="a.hasMold&&Number(a.moldW)>0&&Number(a.moldH)>0?'bg-green-50 text-green-800':'bg-amber-50 text-amber-800'">模具外形：{{a.hasMold&&Number(a.moldW)>0&&Number(a.moldH)>0?'已輸入':'待補'}}</div>
+        </div>
+      </div>
+    </template>
+
+    <div class="flex gap-2"><button @click="step=4" class="w-1/3 rounded-xl border py-3 text-xs font-bold">← 上一步</button><button @click="runAdvisor" class="w-2/3 rounded-xl py-3 text-sm font-black text-white" :class="path==='engineering'?'bg-violet-600':'bg-blue-600'">⚡ {{path==='engineering'?'產生工程選型答案':'產生快速 AI 選型'}}</button></div>
   </section>
 
   <!-- STEP 6 RESULTS -->
   <section v-if="step===6 && result" class="space-y-4">
     <div class="rounded-2xl bg-gradient-to-r from-slate-950 to-blue-950 p-5 text-white">
       <div class="flex items-start justify-between gap-3">
-        <div><div class="text-[10px] font-bold tracking-wider text-blue-300">OMC AI MACHINE SELECTION</div><div class="mt-1 text-3xl font-black">{{result.machineModel}}</div><div class="mt-1 text-xs text-slate-300">建議機台級距 {{result.machine.tonnage}}T ｜ {{path==='quick'?'快速 AI 選型':'工程精準選型'}}</div></div>
+        <div><div class="text-[10px] font-bold tracking-wider text-blue-300">OMC AI MACHINE SELECTION</div><div class="mt-1 text-3xl font-black">{{result.machineModel}}</div><div class="mt-1 text-xs text-slate-300">建議機台級距 {{result.machine.tonnage}}T ｜ {{path==='quick'?'快速 AI 前期選型':'工程精準確認版'}}</div></div>
         <div class="rounded-xl bg-white/10 p-3 text-center"><div class="text-[9px] text-slate-300">資料可信度</div><div class="text-xl font-black">{{result.confidence}}%</div></div>
       </div>
     </div>
@@ -542,7 +611,7 @@ input,select,textarea{min-height:42px}
         <div class="text-[10px] font-bold">Outstanding Machinery Mfg. Co., Ltd.</div>
         <div class="text-[12px] font-black">超群機械工業股份有限公司</div>
       </div>
-      <div class="text-right"><div class="text-[18px] font-black">射出成型機 AI 選型報告</div><div class="text-[8px] text-slate-500">{{reportDate}} ｜ v4.3</div></div>
+      <div class="text-right"><div class="text-[18px] font-black">射出成型機 AI 選型報告</div><div class="text-[8px] text-slate-500">{{reportDate}} ｜ v4.4</div></div>
     </div>
 
     <div class="mt-2 grid grid-cols-4 gap-1">
@@ -736,7 +805,7 @@ createApp({
   futureGrowthOptions:[
     {v:0,t:'不增加',d:'專注目前產品'},{v:20,t:'+20%',d:'小幅升級'},{v:50,t:'+50%',d:'保留明顯空間'},{v:100,t:'+100%',d:'希望未來可做到約2倍 Shot'}
   ],
-  a:{mission:'general',productCategory:'medical',requireHighSpeed:false,requireServo:false,requireBimetal:false,material:'PET',grade:'',fillerType:'none',fillerPct:0,precision:'medical',weightTolerance:'1',partWeight:3.26,cavitiesKnown:true,cavities:32,monthlyDemand:0,hoursDay:20,daysMonth:26,projL:75,projW:12.4,wall:1,exactArea:null,runnerType:'hot',runnerWeight:0,cycle:6.8,meteringWindow:null,knownPressure:null,futureGrowth:50,futureMaterial:'general',futureCapacity:'more',hasMold:true,moldW:520,moldH:750,moldD:null,moldKg:1110,opening:null,eject:null,factoryL:null,factoryW:null,factoryH:null},
+  a:{mission:'general',productCategory:'medical',requireHighSpeed:false,requireServo:false,requireBimetal:false,material:'PET',grade:'',fillerType:'none',fillerPct:0,precision:'medical',weightTolerance:'1',partWeight:3.26,actualShotWeight:null,cavitiesKnown:true,cavities:32,monthlyDemand:0,hoursDay:20,daysMonth:26,projL:75,projW:12.4,wall:1,exactArea:null,runnerType:'hot',runnerWeight:0,cycle:6.8,meteringWindow:null,knownPressure:null,futureGrowth:50,futureMaterial:'general',futureCapacity:'more',hasMold:true,moldW:520,moldH:750,moldD:null,moldKg:1110,opening:null,eject:null,factoryL:null,factoryW:null,factoryH:null},
   cad:{name:'',status:'',ok:false,widthMm:null,heightMm:null},
   injectionChoice:{unit:'',diameter:null},
   tuning:{defect:'splay',note:''},trials:[],
@@ -960,7 +1029,9 @@ createApp({
   },
   runAdvisor(){
    const m=MATERIAL[this.a.material]||MATERIAL.其他,cav=this.resolvedCavities,part=Math.max(0,Number(this.a.partWeight)||0);
-   const runner=this.a.runnerType==='hot'?0:Math.max(0,Number(this.a.runnerWeight)||0),shot=part*cav+runner,vol=shot/(m.density||1);
+   const runner=this.a.runnerType==='hot'?0:Math.max(0,Number(this.a.runnerWeight)||0),calculatedShot=part*cav+runner;
+   const measuredShot=this.path==='engineering'?Math.max(0,Number(this.a.actualShotWeight)||0):0;
+   const shot=measuredShot>0?measuredShot:calculatedShot,vol=shot/(m.density||1);
    if(!(shot>0)){alert('至少需要單件重量與穴數，才能計算射出單元。');return}
    let area=Number(this.a.exactArea)||0,areaSource='工程輸入的總投影面積';
    if(!(area>0)){area=((Number(this.a.projL)||0)*(Number(this.a.projW)||0)/100)*cav;areaSource='由產品最大投影尺寸 × 穴數估算'}
@@ -1002,10 +1073,10 @@ createApp({
    else if(ft==='GF_FR'||this.a.futureMaterial==='filled'){barrel=pct>30?'高耐磨＋高耐腐蝕雙合金：強烈推薦':'耐磨＋耐腐蝕雙合金：建議';barrelReason='目前或未來可能有玻纖 / 阻燃條件，提前考慮耐磨耐蝕可減少日後換料管。'}
    else if(['GF','CF','mineral'].includes(ft)){barrel=pct>30?'高耐磨雙合金：強烈推薦':'耐磨雙合金：建議';barrelReason='填充物提高螺桿 / 料管磨耗。'}
    else if(ft==='FR'){barrel='耐腐蝕型雙合金：建議';barrelReason='阻燃 / 添加劑可能提高腐蝕風險。'}
-   let confidence=this.path==='engineering'?62:48;if(this.a.grade)confidence+=5;if(Number(this.a.exactArea)>0)confidence+=10;if(this.a.hasMold&&Number(this.a.moldW)>0&&Number(this.a.moldH)>0)confidence+=8;if(cycle)confidence+=5;if(Number(this.a.knownPressure)>0)confidence+=5;if(Number(this.a.meteringWindow)>0)confidence+=3;confidence=Math.min(95,confidence);
+   let confidence=this.path==='engineering'?62:48;if(measuredShot>0)confidence+=8;if(this.a.grade)confidence+=5;if(Number(this.a.exactArea)>0)confidence+=10;if(this.a.hasMold&&Number(this.a.moldW)>0&&Number(this.a.moldH)>0)confidence+=8;if(cycle)confidence+=5;if(Number(this.a.knownPressure)>0)confidence+=5;if(Number(this.a.meteringWindow)>0)confidence+=3;confidence=Math.min(95,confidence);
    const lengths=machine.units.map(x=>x.length),lengthRange=Math.min(...lengths)+'–'+Math.max(...lengths)+' mm（依射座）';
    const drive=this.driveRequirement;
-   const base={machine,machineModel:'OS'+machine.tonnage+drive.model,drive,confidence,shotWeight:Math.round(shot*100)/100,shotVolume:Math.round(vol*10)/10,runnerStatus:this.a.runnerType==='hot'?'熱澆道：水口以 0 計':(Number(this.a.runnerWeight)>0?'已含水口':'冷澆道但水口重量未補'),area:Math.round(area*10)/10,areaSource,requiredTonnage:Math.round(required*10)/10,
+   const base={machine,machineModel:'OS'+machine.tonnage+drive.model,drive,confidence,shotWeight:Math.round(shot*100)/100,shotVolume:Math.round(vol*10)/10,runnerStatus:measuredShot>0?'工程實測每模總重量':(this.a.runnerType==='hot'?'熱澆道：水口以 0 計':(Number(this.a.runnerWeight)>0?'已含水口':'冷澆道但水口重量未補')),area:Math.round(area*10)/10,areaSource,requiredTonnage:Math.round(required*10)/10,
     clampCalc:{area:Math.round(area*10)/10,baseCoeff:Math.round(baseClampCoeff*1000)/1000,categoryFactor:Math.round(categoryFactor*100)/100,safetyFactor,
       marginT:Math.round((machine.tonnage-required)*10)/10,marginPct:Math.round(((machine.tonnage-required)/machine.tonnage*100)*10)/10},
     units:machine.units.map(x=>x.unit).join(' / '),lengthRange,moldFit,candidates,
