@@ -6,7 +6,7 @@ OMC Smart Injection Advisor 是給超群機械（OMC）業務、工程與客戶�
 
 👉 **[點我直接使用 Injection Advisor 網頁版](https://injection-advisor.vercel.app)**
 
-## v4.0：客戶導向 AI 選型流程
+## v4.1：客戶導向 AI 選型流程
 
 新版不再先要求客戶填一大堆射出機工程欄位，而是先問：
 
@@ -26,7 +26,7 @@ OMC Smart Injection Advisor 是給超群機械（OMC）業務、工程與客戶�
 - 系統估算資料
 - 待 OMC 官方規格確認資料
 
-## v4.0：以客戶用途與未來性為核心的選機邏輯
+## v4.1：以客戶用途與未來性為核心的選機邏輯
 
 新版先問「這台機器要替客戶做什麼」，再進入工程計算。
 
@@ -108,13 +108,54 @@ OMC Smart Injection Advisor 是給超群機械（OMC）業務、工程與客戶�
 
 PS 塑化能力只作初選基準；PET / PC / GF 等實際塑化能力仍需材料與試模確認。
 
+## v4.1：必選條件 + 高速 EHIII + A4 單頁報告
+
+### 必選條件
+客戶可以把條件設成「硬條件」：
+- 必須高速蓄壓 / 氮氣加速
+- 必須伺服節能 DS
+- 必須雙合金料管 / 螺桿
+
+硬條件會直接排除不符合的方案；沒有設成必選的項目才由 AI 做推薦。
+
+### 高速產品規則
+以下情況自動把高速蓄壓列為必選：
+- 機台策略 = 高速量產
+- 產品類別 = 薄壁高速
+- 產品類別 = 包裝 / 杯盒
+- 客戶手動指定「必須高速蓄壓 / 氮氣加速」
+
+高速硬條件下，標準 EH / EH-DS 不作首選：
+- 高速必選：EHIII / EHIII-DS
+- 高速 + DS 必選：EHIII-DS
+- 非高速但 DS 必選：EH-DS / EHIII-DS
+- 沒有硬條件：EH-DS 為泛用節能推薦，可依預算選 EH
+
+### A4 單頁選型報告
+PDF 改為一張 A4 摘要，標題：
+- OMC OUTSTANDING MACHINERY
+- Outstanding Machinery Mfg. Co., Ltd.
+- 超群機械工業股份有限公司
+- 射出成型機 AI 選型報告
+
+單頁內容包含：
+- 客戶 / 聯絡人 / 產品 / OMC 業務
+- 硬條件與推薦條件
+- 建議完整機型（例如 OS250EHIII-DS）
+- 產品與製程資料
+- Shot / 鎖模力 / 模具 Fit
+- 三種射出配置
+- 螺桿 / 止逆環 / 雙合金
+- TCO（有資料時）
+
 ## 其他模組
 - 現場調機助手：依不同缺陷提供不同排查 / 調整順序
 - 節能與 TCO：實際平均功率、電價、工時、回收期
 - 完整 PDF：最後一次輸出選機、螺桿需求、調機與 TCO
 
 ## 版本保留
-- `main`：目前 v4.0
+- `main`：目前 v4.1
+- `backup-smart-advisor-v4.0`：v4.0 備份
 - `backup-smart-advisor-v3.2`：v3.2 備份
 - `backup-smart-advisor-v3.1`：v3.1 備份
 - `backup-smart-advisor-v3.0`：v3.0 備份
