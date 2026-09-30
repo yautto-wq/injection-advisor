@@ -6,7 +6,7 @@ OMC Smart Injection Advisor 是給超群機械（OMC）業務、工程與客戶�
 
 👉 **[點我直接使用 Injection Advisor 網頁版](https://injection-advisor.vercel.app)**
 
-## v3.0：客戶導向 AI 選型流程
+## v3.2：客戶導向 AI 選型流程
 
 新版不再先要求客戶填一大堆射出機工程欄位，而是先問：
 
@@ -71,7 +71,7 @@ OMC Smart Injection Advisor 是給超群機械（OMC）業務、工程與客戶�
 - 資料可信度
 
 ### 05 射出單元 / 螺桿 AI 規格窗口
-目前在 OMC 各射座正式螺桿規格表尚未匯入前，系統先計算：
+目前已將公開型錄中的射座 / 螺桿直徑、理論射出容積、最大射壓與 PS 塑化能力建入初選資料庫，系統會先自動排名：
 - Shot 重量 / 體積
 - 建議料管可用射量窗口
 - 射壓需求方向
@@ -80,7 +80,7 @@ OMC Smart Injection Advisor 是給超群機械（OMC）業務、工程與客戶�
 - 有卡口 / 無卡口止逆環方向
 - 標準 / 耐磨 / 耐腐蝕 / 高耐磨雙合金方向
 
-正式 Ø40 / Ø46 / Ø52 等螺桿直徑不會亂猜；待 OMC 各射座的：
+正式 Ø40 / Ø46 / Ø52 等候選會依型錄數據直接顯示並可人工改選。選型主要比較 Shot 使用率、Cycle 所需塑化量與射壓餘裕。後續仍應用 OMC 最新正式規格表核對：
 - 螺桿直徑
 - 最大射出體積 / 重量
 - 最高射壓
@@ -97,7 +97,9 @@ OMC Smart Injection Advisor 是給超群機械（OMC）業務、工程與客戶�
 - 完整 PDF：最後一次輸出選機、螺桿需求、調機與 TCO
 
 ## 版本保留
-- `main`：目前 v3.0
+- `main`：目前 v3.2
+- `backup-smart-advisor-v3.1`：v3.1 備份
+- `backup-smart-advisor-v3.0`：v3.0 備份
 - `backup-smart-advisor-v2.2`：v2.2 備份
 - `backup-smart-advisor-v2.1`：v2.1 備份
 - `backup-smart-advisor-v2.0`：v2.0 備份
