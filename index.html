@@ -8,6 +8,8 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 [v-cloak]{display:none}.card{border:1px solid #e2e8f0;border-radius:16px;background:#fff}.qbtn{border:1px solid #cbd5e1;border-radius:14px;padding:14px;text-align:left;transition:.15s}.qbtn:hover{border-color:#2563eb;background:#eff6ff}.qbtn.on{border-color:#2563eb;background:#eff6ff;box-shadow:0 0 0 1px #2563eb inset}
@@ -17,7 +19,7 @@ input,select,textarea{min-height:42px}
 .report-one-page{width:190mm;max-width:100%;min-height:270mm;box-sizing:border-box;font-size:8.6px;line-height:1.22}
 .report-one-page .rbox{border:1px solid #cbd5e1;border-radius:7px;padding:6px}
 .report-one-page .rtitle{font-size:11px;font-weight:900}
-.pdf-export-sheet{width:210mm!important;height:297mm!important;min-height:0!important;max-height:297mm!important;margin:0!important;padding:6mm!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;box-sizing:border-box!important;background:#fff!important}
+.pdf-export-sheet{width:794px!important;min-height:0!important;margin:0!important;padding:22px!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important;box-sizing:border-box!important;background:#fff!important;position:static!important;transform:none!important}
 @page{size:A4 portrait;margin:0}
 @media print{
   html,body{margin:0!important;padding:0!important;background:#fff!important}
@@ -33,7 +35,7 @@ input,select,textarea{min-height:42px}
 <header class="sticky top-0 z-30 bg-slate-950 px-4 py-4 text-white shadow-lg">
   <div class="flex items-center justify-between gap-3">
     <div><div class="text-[10px] font-bold tracking-[.18em] text-blue-300">OMC 超群機械</div><h1 class="text-lg font-black">Smart Injection Advisor</h1><div class="text-[10px] text-slate-400">客戶只回答知道的資料，系統負責把工程問題整理清楚</div></div>
-    <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v4.2</span>
+    <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v4.2.1</span>
   </div>
 </header>
 
@@ -295,11 +297,12 @@ input,select,textarea{min-height:42px}
         <div><span class="text-slate-500">柱間淨距</span><br><b>{{result.machine.tieBar}} × {{result.machine.tieBar}} mm</b></div>
         <div><span class="text-slate-500">模板尺寸</span><br><b>{{result.machine.platen}} × {{result.machine.platen}} mm</b></div>
         <div><span class="text-slate-500">可搭射座</span><br><b>{{result.units}}</b></div>
-        <div><span class="text-slate-500">機台寬</span><br><b>{{result.machine.width}} mm</b></div>
-        <div><span class="text-slate-500">機台高</span><br><b>{{result.machine.height}} mm</b></div>
-        <div><span class="text-slate-500">長度範圍</span><br><b>{{result.lengthRange}}</b></div>
+        <div><span class="text-slate-500">機台長度</span><br><b>{{selectedUnitLength}}</b><div class="text-[9px] text-slate-400">依所選射座</div></div>
+        <div><span class="text-slate-500">機台寬度</span><br><b>{{result.machine.width}} mm</b></div>
+        <div><span class="text-slate-500">機台高度</span><br><b>{{result.machine.height}} mm</b><div class="text-[9px] text-slate-400">廠房淨高需高於此值並預留維修空間</div></div>
       </div>
       <div class="mt-3 rounded-xl p-3 text-[10px]" :class="result.moldFit.level==='ok'?'bg-green-50 text-green-800':(result.moldFit.level==='warn'?'bg-amber-50 text-amber-900':'bg-slate-50 text-slate-600')"><b>模具安裝：</b>{{result.moldFit.text}}</div>
+      <div class="mt-2 rounded-xl p-3 text-[10px]" :class="factoryFitLevel==='warn'?'bg-red-50 text-red-800':(factoryFitLevel==='ok'?'bg-green-50 text-green-800':'bg-slate-50 text-slate-600')"><b>廠房空間：</b>{{factoryFitText}}</div>
       <div class="mt-2 rounded-xl bg-slate-50 p-3 text-[10px] text-slate-600"><b>尚待 OMC 官方資料庫補齊：</b>模板尺寸、最小 / 最大模厚、最大開距、頂出行程、各射座各螺桿的最高射壓 / 射出率 / 塑化量。缺這些資料時系統不會假裝已完成工程確認。</div>
     </div>
 
@@ -492,7 +495,7 @@ input,select,textarea{min-height:42px}
         <div class="text-[10px] font-bold">Outstanding Machinery Mfg. Co., Ltd.</div>
         <div class="text-[12px] font-black">超群機械工業股份有限公司</div>
       </div>
-      <div class="text-right"><div class="text-[18px] font-black">射出成型機 AI 選型報告</div><div class="text-[8px] text-slate-500">{{reportDate}} ｜ v4.2</div></div>
+      <div class="text-right"><div class="text-[18px] font-black">射出成型機 AI 選型報告</div><div class="text-[8px] text-slate-500">{{reportDate}} ｜ v4.2.1</div></div>
     </div>
 
     <div class="mt-2 grid grid-cols-4 gap-1">
@@ -537,6 +540,12 @@ input,select,textarea{min-height:42px}
         <div>確認配置<br><b>{{selectedInjectionUnit}} / {{selectedScrewDiameter}}</b></div>
       </div>
       <div class="mt-1 text-[8px] text-slate-600">{{result.moldFit.text}}</div>
+      <div class="mt-1 grid grid-cols-3 gap-1 text-[8px]">
+        <div><b>機台長</b> {{selectedUnitLength}}</div>
+        <div><b>機台寬</b> {{result.machine.width}} mm</div>
+        <div><b>機台高</b> {{result.machine.height}} mm</div>
+      </div>
+      <div class="mt-1 text-[8px] text-slate-600">{{factoryFitText}}</div>
     </div>
 
     <div v-if="result" class="mt-2">
@@ -703,6 +712,28 @@ createApp({
    const dem=Number(this.a.monthlyDemand)||0,cy=Number(this.a.cycle)||0,h=Number(this.a.hoursDay)||0,d=Number(this.a.daysMonth)||0;
    if(dem>0&&cy>0&&h>0&&d>0)return Math.max(1,Math.ceil(dem*cy/(3600*h*d*.85)));
    return 1
+  },
+  factoryFitLevel(){
+   if(!this.result)return 'none';
+   const L=Number(this.a.factoryL)||0,W=Number(this.a.factoryW)||0,H=Number(this.a.factoryH)||0;
+   if(!(L>0||W>0||H>0))return 'none';
+   const selected=this.result.machine.units.find(x=>x.unit===this.injectionChoice.unit);
+   const machineL=selected?selected.length:Math.max(...this.result.machine.units.map(x=>x.length));
+   if((L>0&&machineL>L)||(W>0&&this.result.machine.width>W)||(H>0&&this.result.machine.height>H))return 'warn';
+   return 'ok';
+  },
+  factoryFitText(){
+   if(!this.result)return '尚未完成選型。';
+   const L=Number(this.a.factoryL)||0,W=Number(this.a.factoryW)||0,H=Number(this.a.factoryH)||0;
+   const selected=this.result.machine.units.find(x=>x.unit===this.injectionChoice.unit);
+   const machineL=selected?selected.length:Math.max(...this.result.machine.units.map(x=>x.length));
+   if(!(L>0||W>0||H>0))return '尚未輸入廠房可用長 / 寬 / 高；機台外形為長 '+machineL+' × 寬 '+this.result.machine.width+' × 高 '+this.result.machine.height+' mm。';
+   const issues=[];
+   if(L>0&&machineL>L)issues.push('長度不足 '+Math.round(machineL-L)+' mm');
+   if(W>0&&this.result.machine.width>W)issues.push('寬度不足 '+Math.round(this.result.machine.width-W)+' mm');
+   if(H>0&&this.result.machine.height>H)issues.push('高度不足 '+Math.round(this.result.machine.height-H)+' mm');
+   if(issues.length)return '機台外形長 '+machineL+' × 寬 '+this.result.machine.width+' × 高 '+this.result.machine.height+' mm；'+issues.join('、')+'。';
+   return '機台外形長 '+machineL+' × 寬 '+this.result.machine.width+' × 高 '+this.result.machine.height+' mm；目前輸入的廠房尺寸初判可容納，仍需預留吊模、維修與安全走道空間。';
   },
   autoInjectionCandidates(){return this.result&&this.result.candidates?this.result.candidates:[]},
   recommendedInjection(){return this.result&&this.result.plans&&this.result.plans.length?this.result.plans[0].candidate:null},
@@ -911,24 +942,28 @@ createApp({
   saveTrial(){const note=(this.tuning.note||'').trim();if(!note){alert('請先輸入本次試模紀錄。');return}this.trials.unshift({time:new Date().toLocaleString('zh-TW'),defect:this.diagnostic.title,note});this.trials=this.trials.slice(0,20);localStorage.setItem('omc_v3_trials',JSON.stringify(this.trials));this.tuning.note=''},
   windowPrint(){window.print()},
   async exportPdf(){
-   if(!window.html2pdf){window.print();return}
    const source=this.$refs.report;if(!source)return;
+   if(!window.html2canvas||!window.jspdf||!window.jspdf.jsPDF){window.print();return}
    const fn='OMC_選型報告_'+((this.project.company||'客戶').replace(/[\\/:*?"<>|]/g,'_'))+'_'+((this.project.name||'專案').replace(/[\\/:*?"<>|]/g,'_'))+'.pdf';
    const host=document.createElement('div');
-   host.style.cssText='position:fixed;left:-12000px;top:0;width:210mm;height:297mm;margin:0;padding:0;background:#fff;z-index:-9999;';
+   host.style.cssText='position:fixed;left:0;top:0;width:794px;background:#fff;z-index:-1;pointer-events:none;';
    const clone=source.cloneNode(true);
    clone.classList.add('pdf-export-sheet');
+   clone.style.width='794px';clone.style.height='auto';clone.style.maxWidth='794px';
    host.appendChild(clone);document.body.appendChild(host);
    try{
-    await this.$nextTick();
-    await window.html2pdf().set({
-      margin:0,
-      filename:fn,
-      image:{type:'jpeg',quality:.98},
-      html2canvas:{scale:1.75,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0,windowWidth:1200},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
-      pagebreak:{mode:['css','legacy']}
-    }).from(clone).save();
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    const canvas=await window.html2canvas(clone,{scale:2,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0,windowWidth:794,logging:false});
+    const img=canvas.toDataURL('image/jpeg',0.98);
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+    const pageW=210,pageH=297,margin=4,availW=pageW-margin*2,availH=pageH-margin*2;
+    const ratio=canvas.width/canvas.height;
+    let drawW=availW,drawH=drawW/ratio;
+    if(drawH>availH){drawH=availH;drawW=drawH*ratio}
+    const x=(pageW-drawW)/2,y=(pageH-drawH)/2;
+    pdf.addImage(img,'JPEG',x,y,drawW,drawH,undefined,'FAST');
+    pdf.save(fn);
    }finally{host.remove()}
   }
  }
