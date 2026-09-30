@@ -185,6 +185,10 @@
           <div class="rounded-xl border p-3" :class="selectionResult.fitmentOk?'bg-green-50 text-green-700':'bg-red-50 text-red-700'"><b>模具柱間距</b><br><span class="text-sm font-black">{{selectionResult.fitmentOk?'✅ 可容納':'❌ 不可容納'}}</span></div>
           <div class="rounded-xl border p-3" :class="factorySummary.status==='ok'?'bg-green-50 text-green-700':(factorySummary.status==='warn'?'bg-amber-50 text-amber-800':'bg-red-50 text-red-700')"><b>廠房空間</b><br><span class="text-sm font-black">{{factorySummary.label}}</span></div>
         </div>
+        <div v-if="selectionResult.moldFitDetail" class="rounded-xl border border-violet-200 bg-violet-50 p-3 text-[11px] text-violet-950">
+          <b>模具安裝判定：</b>{{selectionResult.moldFitDetail.reason}}
+          <div class="mt-1 text-[10px] text-violet-700">目前判定同時使用模板尺寸與柱間淨距，並測試原方向 / 旋轉 90°；不再把「兩個模具尺寸都必須小於柱間」當成硬限制。</div>
+        </div>
 
         <div class="rounded-xl border border-indigo-200 bg-indigo-50/50 p-3">
           <div class="text-xs font-black text-indigo-950">建議級距占地版本</div>
@@ -428,7 +432,7 @@
           <div class="text-sm font-black text-blue-900">1. 選機 / 模具 / 廠房</div>
           <div v-if="selectionResult" class="mt-2 space-y-2">
             <div class="rounded bg-slate-900 p-3 text-white"><div class="text-[10px] text-blue-300">建議機型</div><div class="text-xl font-black">{{selectionResult.machineModel}}</div><div>需求 {{selectionResult.requiredTonnage}}T ｜ 建議 {{selectionResult.selectedTonnage}}T ｜ 射量 {{selectionResult.utilizationText}}</div></div>
-            <div class="rounded border p-3">材料 {{material}} ｜ 投影面積 {{selectionCalc.area}} cm²<span v-if="selectionCalc.areaEstimated">（粗估）</span> ｜ 每模重量 {{selectionCalc.totalWeight?selectionCalc.totalWeight+' g':'未提供'}}<br>模具 {{mold.width}} × {{mold.height}} mm<span v-if="mold.depth"> ｜ 模厚 {{mold.depth}} mm</span></div>
+            <div class="rounded border p-3">材料 {{material}} ｜ 投影面積 {{selectionCalc.area}} cm²<span v-if="selectionCalc.areaEstimated">（粗估）</span> ｜ 每模重量 {{selectionCalc.totalWeight?selectionCalc.totalWeight+' g':'未提供'}}<br>模具 {{mold.width}} × {{mold.height}} mm<span v-if="mold.depth"> ｜ 模厚 {{mold.depth}} mm</span><div v-if="selectionResult.moldFitDetail" class="mt-1">模板 / 柱間判定：{{selectionResult.moldFitDetail.reason}}</div></div>
             <div v-if="cad.name" class="rounded border p-3"><b>CAD：</b>{{cad.name}} ｜ {{cad.status}}<span v-if="cad.ok"> ｜ 推算外框 {{cad.widthMm}} × {{cad.heightMm}} mm（{{cad.unitLabel}}）</span></div>
             <div class="rounded border p-3">廠房可用 {{factory.length}} × {{factory.width}} × {{factory.height}} mm ｜ {{factorySummary.reportLabel}}<div v-if="bestFootprint">占地參考 OS-{{selectionResult.selectedTonnage}} / {{bestFootprint.unit}}：{{bestFootprint.length}} × {{bestFootprint.width}} × {{bestFootprint.height}} mm</div></div>
           </div>
@@ -491,15 +495,15 @@
 const { createApp } = Vue;
 
 const MACHINE_DB=[
- {tonnage:50,tieBar:310,capacity:130,baseL:1619,width:1100,d1:462,height:1505,h1:1192,units:[{unit:'i05',length:3376},{unit:'i08',length:3715}]},
- {tonnage:80,tieBar:360,capacity:181,baseL:1847,width:1164,d1:497,height:1578,h1:1227,units:[{unit:'i05',length:3972},{unit:'i08',length:3943},{unit:'i11',length:4087}]},
- {tonnage:110,tieBar:410,capacity:266,baseL:2107,width:1240,d1:535,height:1651,h1:1265,units:[{unit:'i08',length:4285},{unit:'i11',length:4347},{unit:'i14',length:4589}]},
- {tonnage:140,tieBar:460,capacity:391,baseL:2395,width:1395,d1:592,height:1726,h1:1310,units:[{unit:'i11',length:4876},{unit:'i14',length:4877},{unit:'i18',length:5116}]},
- {tonnage:180,tieBar:510,capacity:549,baseL:2626,width:1465,d1:627,height:1796,h1:1345,units:[{unit:'i14',length:5242},{unit:'i18',length:5347},{unit:'i25',length:5642}]},
- {tonnage:250,tieBar:580,capacity:770,baseL:2949,width:1575,d1:687,height:1815,h1:1312,units:[{unit:'i18',length:5575},{unit:'i25',length:5960},{unit:'i32',length:6292}]},
- {tonnage:320,tieBar:660,capacity:1149,baseL:3333,width:1619,d1:748,height:1910,h1:1420,units:[{unit:'i25',length:6466},{unit:'i32',length:6676},{unit:'i42',length:6960}]},
- {tonnage:420,tieBar:760,capacity:1702,baseL:3838,width:1783,d1:830,height:2050,h1:1486,units:[{unit:'i32',length:7261},{unit:'i42',length:7465},{unit:'i55',length:7998}]},
- {tonnage:550,tieBar:860,capacity:2400,baseL:4285,width:1963,d1:920,height:2222,h1:1578,units:[{unit:'i42',length:7912},{unit:'i55',length:8445}]}
+ {tonnage:50,tieBar:310,platen:470,capacity:130,baseL:1619,width:1100,d1:462,height:1505,h1:1192,units:[{unit:'i05',length:3376},{unit:'i08',length:3715}]},
+ {tonnage:80,tieBar:360,platen:540,capacity:181,baseL:1847,width:1164,d1:497,height:1578,h1:1227,units:[{unit:'i05',length:3972},{unit:'i08',length:3943},{unit:'i11',length:4087}]},
+ {tonnage:110,tieBar:410,platen:615,capacity:266,baseL:2107,width:1240,d1:535,height:1651,h1:1265,units:[{unit:'i08',length:4285},{unit:'i11',length:4347},{unit:'i14',length:4589}]},
+ {tonnage:140,tieBar:460,platen:690,capacity:391,baseL:2395,width:1395,d1:592,height:1726,h1:1310,units:[{unit:'i11',length:4876},{unit:'i14',length:4877},{unit:'i18',length:5116}]},
+ {tonnage:180,tieBar:510,platen:760,capacity:549,baseL:2626,width:1465,d1:627,height:1796,h1:1345,units:[{unit:'i14',length:5242},{unit:'i18',length:5347},{unit:'i25',length:5642}]},
+ {tonnage:250,tieBar:580,platen:866,capacity:770,baseL:2949,width:1575,d1:687,height:1815,h1:1312,units:[{unit:'i18',length:5575},{unit:'i25',length:5960},{unit:'i32',length:6292}]},
+ {tonnage:320,tieBar:660,platen:980,capacity:1149,baseL:3333,width:1619,d1:748,height:1910,h1:1420,units:[{unit:'i25',length:6466},{unit:'i32',length:6676},{unit:'i42',length:6960}]},
+ {tonnage:420,tieBar:760,platen:1130,capacity:1702,baseL:3838,width:1783,d1:830,height:2050,h1:1486,units:[{unit:'i32',length:7261},{unit:'i42',length:7465},{unit:'i55',length:7998}]},
+ {tonnage:550,tieBar:860,platen:1290,capacity:2400,baseL:4285,width:1963,d1:920,height:2222,h1:1578,units:[{unit:'i42',length:7912},{unit:'i55',length:8445}]}
 ];
 
 const PROCESS_DB={
@@ -569,7 +573,7 @@ createApp({
    const coolingCoeffs={PP:1.8,ABS:1.8,PET:2.5,PC:2.5,PA_GF:1.8};
    const required=this.selectionCalc.area*this.selectionCalc.coeff*1.2;
    const base=MACHINE_DB.find(m=>m.tonnage>=required)||MACHINE_DB[MACHINE_DB.length-1];
-   const fit=MACHINE_DB.find(m=>m.tieBar>=Number(this.mold.width)&&m.tieBar>=Number(this.mold.height))||MACHINE_DB[MACHINE_DB.length-1];
+   const fit=MACHINE_DB.find(m=>this.machineMoldFit(m,Number(this.mold.width),Number(this.mold.height)).fit)||MACHINE_DB[MACHINE_DB.length-1];
    const selected=base.tonnage>=fit.tonnage?base:fit;
    const wall=Number(this.avgWallThickness)||0;
    const fill=1.5,hold=wall*1.2,cooling=Math.max(3,(coolingCoeffs[this.material]||1.8)*Math.pow(wall,2)),dry=selected.tonnage<=140?2:(selected.tonnage<=320?3.2:4.5);
@@ -637,13 +641,37 @@ createApp({
   }
  },
  methods:{
+  machineMoldFit(machine,w,h){
+   w=Number(w)||0;h=Number(h)||0;
+   if(!(w>0&&h>0))return{fit:false,orientation:'',reason:'模具尺寸不足'};
+   const plateW=Number(machine.platen)||0,plateH=Number(machine.platen)||0;
+   const tieW=Number(machine.tieBar)||0,tieH=Number(machine.tieBar)||0;
+   const test=(mw,mh,label)=>{
+    const platenFit=mw<=plateW&&mh<=plateH;
+    const clearsBars=(mw<=tieW)||(mh<=tieH);
+    return{fit:platenFit&&clearsBars,platenFit,clearsBars,label,mw,mh};
+   };
+   const normal=test(w,h,'原方向');
+   const rotated=test(h,w,'旋轉90°');
+   const best=normal.fit?normal:(rotated.fit?rotated:normal);
+   let reason='';
+   if(best.fit){
+    const through=best.mw<=tieW?'寬度 '+best.mw+' mm 小於柱間 '+tieW+' mm':'高度 '+best.mh+' mm 小於柱間 '+tieH+' mm';
+    reason=best.label+'：模板 '+plateW+'×'+plateH+' mm 可容納，且'+through+'；另一方向可在模板範圍內延伸，不再要求兩邊都小於柱間。';
+   }else if(!normal.platenFit&&!rotated.platenFit){
+    reason='模具外形超出模板 '+plateW+'×'+plateH+' mm。';
+   }else{
+    reason='模具雖在模板範圍內，但寬、高都超過柱間淨距 '+tieW+'×'+tieH+' mm，需工程確認是否會干涉拉桿。';
+   }
+   return{fit:best.fit,orientation:best.label,reason,platen:plateW,tieBar:tieW};
+  },
   calculateSelection(){
    const c=this.selectionCalc;if(!(c.area>0&&Number(this.mold.width)>0&&Number(this.mold.height)>0)){alert('請補齊產品資料與模具寬 / 高。');return}
-   const required=c.area*c.coeff*1.2,base=MACHINE_DB.find(m=>m.tonnage>=required)||MACHINE_DB[MACHINE_DB.length-1],fit=MACHINE_DB.find(m=>m.tieBar>=Number(this.mold.width)&&m.tieBar>=Number(this.mold.height))||null;
+   const required=c.area*c.coeff*1.2,base=MACHINE_DB.find(m=>m.tonnage>=required)||MACHINE_DB[MACHINE_DB.length-1],fit=MACHINE_DB.find(m=>this.machineMoldFit(m,Number(this.mold.width),Number(this.mold.height)).fit)||null;
    let selected=base,upgraded=false;if(fit&&fit.tonnage>base.tonnage){selected=fit;upgraded=true}if(!fit)selected=MACHINE_DB[MACHINE_DB.length-1];
-   const fitmentOk=selected.tieBar>=Number(this.mold.width)&&selected.tieBar>=Number(this.mold.height);let util=null,utilOk=null;
+   const moldFitDetail=this.machineMoldFit(selected,Number(this.mold.width),Number(this.mold.height));const fitmentOk=moldFitDetail.fit;let util=null,utilOk=null;
    if(c.totalWeight){const reqVol=c.totalWeight/c.density;util=Math.round(reqVol/selected.capacity*100);utilOk=util>=20&&util<=80}
-   this.selectionResult={machineModel:'OS'+selected.tonnage+this.driveType,requiredTonnage:Math.round(required*10)/10,baseTonnage:base.tonnage,selectedTonnage:selected.tonnage,upgraded,tonnageOk:selected.tonnage>=required,fitmentOk,utilization:util,utilizationOk:utilOk,utilizationText:util===null?'待補射出重量':util+'%'};
+   this.selectionResult={machineModel:'OS'+selected.tonnage+this.driveType,requiredTonnage:Math.round(required*10)/10,baseTonnage:base.tonnage,selectedTonnage:selected.tonnage,upgraded,tonnageOk:selected.tonnage>=required,fitmentOk,moldFitDetail,utilization:util,utilizationOk:utilOk,utilizationText:util===null?'待補射出重量':util+'%'};
    if(this.mode===3&&Number(this.form3.cavities)>0)this.production.cavities=Number(this.form3.cavities)
   },
   handleCadUpload(e){
