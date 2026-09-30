@@ -35,7 +35,7 @@ input,select,textarea{min-height:42px}
 <header class="sticky top-0 z-30 bg-slate-950 px-4 py-4 text-white shadow-lg">
   <div class="flex items-center justify-between gap-3">
     <div><div class="text-[10px] font-bold tracking-[.18em] text-blue-300">OMC 超群機械</div><h1 class="text-lg font-black">Smart Injection Advisor</h1><div class="text-[10px] text-slate-400">客戶只回答知道的資料，系統負責把工程問題整理清楚</div></div>
-    <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v4.2.4</span>
+    <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v4.3</span>
   </div>
 </header>
 
@@ -302,6 +302,8 @@ input,select,textarea{min-height:42px}
           <div class="mt-2 text-xl font-black">{{p.candidate.unit}} / Ø{{p.candidate.diameter}}</div>
           <div class="mt-1 text-[10px] text-slate-500">Shot {{p.candidate.util}}% ｜ 未來 {{p.candidate.futureUtil}}% ｜ 射壓 {{p.candidate.pressure}} kg/cm²</div>
           <div class="mt-1 text-[10px] text-slate-500">PS塑化 {{p.candidate.plasticizing||'—'}} kg/h ｜ L/D {{p.candidate.ld||'—'}}</div>
+          <div v-if="p.candidate.injectionStroke||p.candidate.injectionSpeed" class="mt-1 text-[9px] text-slate-500">射出行程 {{p.candidate.injectionStroke||'—'}} mm ｜ 最大射速 {{p.candidate.injectionSpeed||'—'}} mm/s ｜ 射出率 {{p.candidate.injectionRate||'—'}} cm³/s</div>
+          <div v-if="p.candidate.effectiveLength" class="mt-1 text-[9px] text-slate-400">L/D 有效長度估算約 {{p.candidate.effectiveLength}} mm（不是螺桿總長）</div>
           <div class="mt-3 rounded-xl bg-slate-50 p-2 text-[10px] leading-relaxed">{{p.reason}}</div>
           <div class="mt-2 text-[9px] leading-relaxed text-amber-800"><b>為什麼不再放大：</b>{{p.whyNotBigger}}</div>
         </button>
@@ -321,7 +323,8 @@ input,select,textarea{min-height:42px}
       </div>
       <div class="mt-3 rounded-xl p-3 text-[10px]" :class="result.moldFit.level==='ok'?'bg-green-50 text-green-800':(result.moldFit.level==='warn'?'bg-amber-50 text-amber-900':'bg-slate-50 text-slate-600')"><b>模具安裝：</b>{{result.moldFit.text}}</div>
       <div class="mt-2 rounded-xl p-3 text-[10px]" :class="factoryFitLevel==='warn'?'bg-red-50 text-red-800':(factoryFitLevel==='ok'?'bg-green-50 text-green-800':'bg-slate-50 text-slate-600')"><b>廠房空間：</b>{{factoryFitText}}</div>
-      <div class="mt-2 rounded-xl bg-slate-50 p-3 text-[10px] text-slate-600"><b>尚待 OMC 官方資料庫補齊：</b>模板尺寸、最小 / 最大模厚、最大開距、頂出行程、各射座各螺桿的最高射壓 / 射出率 / 塑化量。缺這些資料時系統不會假裝已完成工程確認。</div>
+      <div v-if="result.machine.tonnage===250" class="mt-2 rounded-xl bg-blue-50 p-3 text-[10px] text-blue-900"><b>250T 實務射座下限：</b>一般 / 泛用選型至少從 I25 起跳；I18 只保留給專用 / 特用且有明確工程理由的案子。</div>
+      <div class="mt-2 rounded-xl bg-slate-50 p-3 text-[10px] text-slate-600"><b>資料完整度：</b>目前已有理論射量、最大射壓、L/D、PS 塑化量；250T 已加入正式型錄的射出行程、標準射速 / EHIII 射速與射出率。其他噸數的射速資料仍需逐步補齊；實際螺桿總長與螺槽幾何尚未列入公開型錄資料。</div>
     </div>
 
     <div class="card border-cyan-200 p-4">
@@ -539,7 +542,7 @@ input,select,textarea{min-height:42px}
         <div class="text-[10px] font-bold">Outstanding Machinery Mfg. Co., Ltd.</div>
         <div class="text-[12px] font-black">超群機械工業股份有限公司</div>
       </div>
-      <div class="text-right"><div class="text-[18px] font-black">射出成型機 AI 選型報告</div><div class="text-[8px] text-slate-500">{{reportDate}} ｜ v4.2.4</div></div>
+      <div class="text-right"><div class="text-[18px] font-black">射出成型機 AI 選型報告</div><div class="text-[8px] text-slate-500">{{reportDate}} ｜ v4.3</div></div>
     </div>
 
     <div class="mt-2 grid grid-cols-4 gap-1">
@@ -659,6 +662,21 @@ const INJECTION_UNIT_DB={
  i32:{diam:[46,52,58,65],vol:[386,493,613,770],pressure:[3043,2382,1914,1524],ld:[22.9,20,20,17.7]},
  i42:{diam:[52,58,65,75],vol:[552,687,863,1149],pressure:[3029,2435,1938,1456],ld:[22.8,20,20,17.7]},
  i55:{diam:[58,65,75,85],vol:[793,995,1325,1702],pressure:[3017,2402,1804,1405],ld:[22.5,20,20,17.7]}
+};
+const PRACTICAL_UNIT_FLOOR={250:'i25'};
+const INJECTION_PERF_DB={
+  250:{
+    standard:{
+      i18:{stroke:184,speed:238,rate:[242,299,396,506]},
+      i25:{stroke:208,speed:171,rate:[216,286,366,455]},
+      i32:{stroke:232,speed:143,rate:[239,306,381,478]}
+    },
+    highSpeed:{
+      i18:{stroke:184,speed:330,rate:[340,420,556,645]},
+      i25:{stroke:208,speed:300,rate:[372,494,632,784]},
+      i32:{stroke:232,speed:260,rate:[433,553,687,863]}
+    }
+  }
 };
 const PLASTICIZING_DB={
  50:{i05:[18,22,30,42],i08:[24,34,49,68]},
@@ -840,8 +858,12 @@ createApp({
     u.diam.forEach((d,i)=>{
       const util=u.vol[i]>0?vol/u.vol[i]*100:999,futureUtil=u.vol[i]>0?futureVol/u.vol[i]*100:999,p=u.pressure[i],pl=Number(plast[i])||0;
       const pressureMargin=knownP>0?p/knownP:null,plastMargin=requiredKgH>0&&pl>0?pl/requiredKgH:null;
-      const hardOk=util<=82&&util>=10&&(!pressureMargin||pressureMargin>=1)&&(!plastMargin||plastMargin>=1);
-      out.push({unit:mu.unit,unitIndex,diameter:d,diamIndex:i,volume:u.vol[i],pressure:p,plasticizing:pl,ld:u.ld[i],util:Math.round(util*10)/10,futureUtil:Math.round(futureUtil*10)/10,pressureMargin:pressureMargin?Math.round(pressureMargin*100)/100:null,plastMargin:plastMargin?Math.round(plastMargin*100)/100:null,hardOk,machineLength:mu.length});
+      const hardOk=util<=78&&util>=12&&(!pressureMargin||pressureMargin>=1)&&(!plastMargin||plastMargin>=1);
+      const perfFamily=this.highSpeedMandatory?'highSpeed':'standard',perf=(((INJECTION_PERF_DB[machine.tonnage]||{})[perfFamily]||{})[mu.unit]||null);
+      out.push({unit:mu.unit,unitIndex,diameter:d,diamIndex:i,volume:u.vol[i],pressure:p,plasticizing:pl,ld:u.ld[i],
+        effectiveLength:u.ld[i]?Math.round(d*u.ld[i]):null,
+        injectionStroke:perf?perf.stroke:null,injectionSpeed:perf?perf.speed:null,injectionRate:perf&&perf.rate?perf.rate[i]:null,
+        util:Math.round(util*10)/10,futureUtil:Math.round(futureUtil*10)/10,pressureMargin:pressureMargin?Math.round(pressureMargin*100)/100:null,plastMargin:plastMargin?Math.round(plastMargin*100)/100:null,hardOk,machineLength:mu.length});
     });
    });
    return out;
@@ -873,24 +895,46 @@ createApp({
   selectPlan(candidates,mode,machine){
    const valid=candidates.filter(c=>c.hardOk);
    let pool=valid.length?valid:candidates;
+   const floor=PRACTICAL_UNIT_FLOOR[machine.tonnage];
+   if(floor&&!['dedicated','special'].includes(this.a.mission)){
+     const fi=machine.units.findIndex(x=>x.unit===floor);
+     const practical=pool.filter(c=>c.unitIndex>=fi);
+     if(practical.length)pool=practical;
+   }
+   const comfortable=pool.filter(c=>c.util>=15&&c.util<=68);
+   if(comfortable.length)pool=comfortable;
    if(mode==='omc'&&!['dedicated','special'].includes(this.a.mission)){
      const unitOrder=machine.units.map(x=>x.unit);
      for(let k=unitOrder.length-1;k>=0;k--){
-       const p=pool.filter(c=>c.unit===unitOrder[k]&&c.util>=12&&c.util<=78);
+       const p=pool.filter(c=>c.unit===unitOrder[k]&&c.util>=15&&c.util<=68);
        if(p.length){pool=p;break}
      }
    }
    if(mode==='dedicated'){
-     pool=pool.filter(c=>c.util>=18&&c.util<=78);if(!pool.length)pool=valid.length?valid:candidates;
+     const p=pool.filter(c=>c.util>=20&&c.util<=65);if(p.length)pool=p;
    }
    if(mode==='future'){
      const unitOrder=machine.units.map(x=>x.unit);
      for(let k=unitOrder.length-1;k>=0;k--){
-       const p=pool.filter(c=>c.unit===unitOrder[k]&&c.futureUtil<=75&&c.util>=10);
+       const p=pool.filter(c=>c.unit===unitOrder[k]&&c.futureUtil<=68&&c.util>=12);
        if(p.length){pool=p;break}
      }
    }
    return pool.slice().sort((a,b)=>this.diameterScore(b,mode)-this.diameterScore(a,mode))[0]||candidates[0];
+  },
+  nextHigherCandidate(base,candidates,machine,used=[]){
+   if(!base)return null;
+   const usedKeys=new Set(used.filter(Boolean).map(x=>x.unit+'-'+x.diameter));
+   const floor=PRACTICAL_UNIT_FLOOR[machine.tonnage],fi=floor?machine.units.findIndex(x=>x.unit===floor):-1;
+   let pool=candidates.filter(c=>!usedKeys.has(c.unit+'-'+c.diameter)&&c.hardOk&&c.util>=12&&c.util<=68&&c.futureUtil<=75);
+   if(fi>=0&&!['dedicated','special'].includes(this.a.mission))pool=pool.filter(c=>c.unitIndex>=fi);
+   const higherUnit=pool.filter(c=>c.unitIndex>base.unitIndex).sort((a,b)=>a.unitIndex-b.unitIndex||Math.abs(a.util-28)-Math.abs(b.util-28));
+   if(higherUnit.length)return higherUnit[0];
+   const higherDia=pool.filter(c=>c.unitIndex===base.unitIndex&&c.diamIndex>base.diamIndex).sort((a,b)=>a.diamIndex-b.diamIndex);
+   if(higherDia.length)return higherDia[0];
+   const higherVol=pool.filter(c=>c.volume>base.volume).sort((a,b)=>a.volume-b.volume);
+   if(higherVol.length)return higherVol[0];
+   return pool.slice().sort((a,b)=>this.diameterScore(b,'future')-this.diameterScore(a,'future'))[0]||null;
   },
   explainPlan(candidate,mode,machine){
    if(!candidate)return{reason:'資料不足',why:'資料不足'};
@@ -902,6 +946,7 @@ createApp({
     else if(this.a.mission==='speed'||this.a.productCategory==='packaging')reason='依 OMC 高速策略先採較大射座，再在射壓仍足夠的前提下把螺桿往中大直徑選，換取更大的塑化與產能餘裕。';
     else reason='依 OMC 泛用策略，工程條件允許時先採這台可搭的較大射座，再用中間 / 合理直徑兼顧今天的 Shot 控制與未來擴充。';
    }else if(mode==='dedicated')reason='只針對目前產品最佳化，優先把 Shot 使用率、壓力與材料停留控制在較舒服的區域，不特別為未來產品放大。';
+   else if(mode==='upgrade')reason='比 OMC 建議再高一級，但不為了容量把目前 Shot 壓得太低。';
    else reason='把未來 Shot 成長 '+this.a.futureGrowth+'% 一起納入，優先保留大射座與未來容量，但仍避免今天的 Shot 小到失去控制。';
    let why='';
    if(next){
@@ -966,11 +1011,16 @@ createApp({
     units:machine.units.map(x=>x.unit).join(' / '),lengthRange,moldFit,candidates,
     screw:{capacityMin:Math.round(vol/.7*10)/10,capacityMax:Math.round(vol/.3*10)/10,plasticizing:requiredKgH>0?Math.round(requiredKgH*10)/10+' kg/h':'待 Cycle / 計量時間',pressureClass:pressure,pressureReason,diameterAnswer:'依用途策略＋型錄數據自動推薦',ld:m.ld,ldReason:m.ldReason,checkRing,checkReason,barrel,barrelReason}};
    this.result=base;
-   const p1=this.explainPlan(omc,'omc',machine),p2=this.explainPlan(dedicated,'dedicated',machine),p3=this.explainPlan(future,'future',machine);
+   let second=this.nextHigherCandidate(omc,candidates,machine,[omc])||dedicated;
+   if(second&&(second.unit===omc.unit&&second.diameter===omc.diameter))second=this.nextHigherCandidate(omc,candidates,machine,[omc]);
+   let third=future;
+   if(!third||[omc,second].filter(Boolean).some(x=>x.unit===third.unit&&x.diameter===third.diameter))third=this.nextHigherCandidate(second||omc,candidates,machine,[omc,second]);
+   if(!third)third=this.nextHigherCandidate(omc,candidates,machine,[omc,second])||future;
+   const p1=this.explainPlan(omc,'omc',machine),p2=this.explainPlan(second,'upgrade',machine),p3=this.explainPlan(third,'future',machine);
    this.result.plans=[
     {key:'omc',title:'OMC 建議方案',candidate:omc,reason:p1.reason,whyNotBigger:p1.why},
-    {key:'dedicated',title:'專機最佳方案',candidate:dedicated,reason:p2.reason,whyNotBigger:p2.why},
-    {key:'future',title:'未來升級方案',candidate:future,reason:p3.reason,whyNotBigger:p3.why}
+    {key:'upgrade',title:'穩健升級方案',candidate:second,reason:'在 OMC 建議配置上再高一級，但仍維持合理 Shot 使用率與射壓餘裕。',whyNotBigger:p2.why},
+    {key:'future',title:'未來升級方案',candidate:third,reason:p3.reason,whyNotBigger:p3.why}
    ];
    this.result.strategyHeadline=['dedicated','special'].includes(this.a.mission)?'專用 / 特用：不強制放大射座':'泛用策略：先把射座放大，再把螺桿直徑選在合理位置';
    this.result.strategyReason=(this.highSpeedMandatory?'高速產品已列為硬條件：必須採 EHIII 高速蓄壓 / 氮氣加速。':'目前高速不是硬條件，EHIII 僅在速度餘裕有價值時作升級推薦。')+' '+(['dedicated','special'].includes(this.a.mission)?'專用 / 特用策略以目前產品最佳化。':'泛用策略先保留較大射座，再依 Shot、Cycle、射壓與未來需求選螺桿直徑。');
