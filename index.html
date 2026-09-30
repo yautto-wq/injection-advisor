@@ -14,7 +14,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:700}
 input,select,textarea{min-height:42px}
 .report-sheet{background:#fff;color:#0f172a}
-.report-one-page{width:190mm;max-width:100%;min-height:270mm;box-sizing:border-box;font-size:9px;line-height:1.28}
+.report-one-page{width:190mm;max-width:100%;min-height:270mm;box-sizing:border-box;font-size:8.6px;line-height:1.22}
 .report-one-page .rbox{border:1px solid #cbd5e1;border-radius:7px;padding:6px}
 .report-one-page .rtitle{font-size:11px;font-weight:900}
 .pdf-export-sheet{width:210mm!important;height:297mm!important;min-height:0!important;max-height:297mm!important;margin:0!important;padding:6mm!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;box-sizing:border-box!important;background:#fff!important}
@@ -33,15 +33,16 @@ input,select,textarea{min-height:42px}
 <header class="sticky top-0 z-30 bg-slate-950 px-4 py-4 text-white shadow-lg">
   <div class="flex items-center justify-between gap-3">
     <div><div class="text-[10px] font-bold tracking-[.18em] text-blue-300">OMC 超群機械</div><h1 class="text-lg font-black">Smart Injection Advisor</h1><div class="text-[10px] text-slate-400">客戶只回答知道的資料，系統負責把工程問題整理清楚</div></div>
-    <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v4.1.1</span>
+    <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v4.2</span>
   </div>
 </header>
 
-<nav class="no-print sticky top-[82px] z-20 grid grid-cols-4 border-b bg-white text-center text-[11px] font-bold shadow-sm">
+<nav class="no-print sticky top-[82px] z-20 grid grid-cols-5 border-b bg-white text-center text-[10px] font-bold shadow-sm">
   <button @click="tab='advisor'" class="py-3" :class="tab==='advisor'?'bg-blue-600 text-white':'text-slate-600'">AI 選型</button>
-  <button @click="tab='tuning'" class="py-3" :class="tab==='tuning'?'bg-violet-600 text-white':'text-slate-600'">調機助手</button>
-  <button @click="tab='tco'" class="py-3" :class="tab==='tco'?'bg-amber-500 text-white':'text-slate-600'">節能 TCO</button>
-  <button @click="tab='report'" class="py-3" :class="tab==='report'?'bg-slate-900 text-white':'text-slate-600'">完整報告</button>
+  <button @click="tab='capacity'" class="py-3" :class="tab==='capacity'?'bg-emerald-600 text-white':'text-slate-600'">產能 / 原料</button>
+  <button @click="tab='tuning'" class="py-3" :class="tab==='tuning'?'bg-violet-600 text-white':'text-slate-600'">調機</button>
+  <button @click="tab='tco'" class="py-3" :class="tab==='tco'?'bg-amber-500 text-white':'text-slate-600'">TCO</button>
+  <button @click="tab='report'" class="py-3" :class="tab==='report'?'bg-slate-900 text-white':'text-slate-600'">報告</button>
 </nav>
 
 <main class="space-y-4 p-4">
@@ -370,8 +371,74 @@ input,select,textarea{min-height:42px}
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-2 no-print"><button @click="step=1;result=null" class="rounded-xl border py-3 text-xs font-bold">重新選型</button><button @click="tab='report'" class="rounded-xl bg-slate-900 py-3 text-xs font-black text-white">看完整報告 →</button></div>
+    <div class="grid grid-cols-3 gap-2 no-print"><button @click="step=1;result=null" class="rounded-xl border py-3 text-xs font-bold">重新選型</button><button @click="tab='capacity'" class="rounded-xl bg-emerald-600 py-3 text-xs font-black text-white">算產能 / 原料</button><button @click="tab='report'" class="rounded-xl bg-slate-900 py-3 text-xs font-black text-white">看報告 →</button></div>
   </section>
+</section>
+
+<!-- CAPACITY -->
+<section v-if="tab==='capacity'" class="space-y-4">
+  <div class="rounded-2xl bg-gradient-to-br from-emerald-900 to-slate-900 p-5 text-white">
+    <div class="text-xs font-bold text-emerald-300">產能 / 訂單 / 原料計算</div>
+    <div class="mt-1 text-xl font-black">一天能做幾顆？這張訂單要幾天？要準備多少原料？</div>
+    <p class="mt-2 text-xs text-slate-300">直接沿用選型資料的 Cycle、穴數、產品重量與水口重量；再加入稼動率、良品率、工時與水口回收。</p>
+  </div>
+
+  <div class="card p-4">
+    <div class="text-sm font-black">生產條件</div>
+    <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <label class="text-[10px]">Cycle 秒<input v-model.number="a.cycle" type="number" step="0.1" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">穴數<input v-model.number="a.cavities" type="number" min="1" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">稼動率 %<input v-model.number="capacity.uptime" type="number" min="1" max="100" step="0.1" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">良品率 %<input v-model.number="capacity.yieldRate" type="number" min="1" max="100" step="0.1" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">每日工時<input v-model.number="capacity.hoursDay" type="number" min="1" max="24" step="0.5" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">每月工作日<input v-model.number="capacity.daysMonth" type="number" min="1" max="31" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">訂單數量 pcs<input v-model.number="capacity.orderQty" type="number" min="0" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">開機 / 清料額外損耗 %<input v-model.number="capacity.startupLossPct" type="number" min="0" max="100" step="0.1" class="mt-1 w-full rounded border p-2"></label>
+    </div>
+  </div>
+
+  <div class="card p-4">
+    <div class="text-sm font-black">原料條件</div>
+    <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <label class="text-[10px]">單件重量 g<input v-model.number="a.partWeight" type="number" step="0.01" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">水口重量 g / shot<input v-model.number="a.runnerWeight" type="number" step="0.01" class="mt-1 w-full rounded border p-2" :disabled="a.runnerType==='hot'"></label>
+      <label class="text-[10px]">澆道<select v-model="a.runnerType" class="mt-1 w-full rounded border p-2"><option value="hot">熱澆道</option><option value="cold">冷澆道</option><option value="unknown">不知道</option></select></label>
+      <label class="text-[10px]">水口回收比例 %<input v-model.number="capacity.runnerRecyclePct" type="number" min="0" max="100" step="1" class="mt-1 w-full rounded border p-2" :disabled="a.runnerType==='hot'"></label>
+    </div>
+    <div class="mt-2 text-[10px] text-slate-500">原料準備量會把不良品造成的額外生產、冷澆道水口、可回收水口與開機/清料損耗一起算進去。熱澆道的水口重量以 0 計。</div>
+  </div>
+
+  <div v-if="capacityResult" class="space-y-3">
+    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div class="card p-4"><div class="text-[9px] text-slate-500">理論產量 / hr</div><div class="text-xl font-black">{{fmt(capacityResult.theoreticalPcsHour)}}</div><div class="text-[9px]">pcs</div></div>
+      <div class="card p-4"><div class="text-[9px] text-slate-500">實際良品 / hr</div><div class="text-xl font-black">{{fmt(capacityResult.goodPcsHour)}}</div><div class="text-[9px]">已含稼動率＋良品率</div></div>
+      <div class="card bg-emerald-50 p-4"><div class="text-[9px] text-emerald-700">每天良品</div><div class="text-xl font-black text-emerald-900">{{fmt(capacityResult.goodPcsDay)}}</div><div class="text-[9px]">pcs / day</div></div>
+      <div class="card p-4"><div class="text-[9px] text-slate-500">每月良品</div><div class="text-xl font-black">{{fmt(capacityResult.goodPcsMonth)}}</div><div class="text-[9px]">pcs / month</div></div>
+    </div>
+
+    <div class="card border-blue-200 p-4">
+      <div class="text-sm font-black">訂單交期</div>
+      <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div class="rounded-xl bg-blue-50 p-3"><div class="text-[9px] text-blue-700">訂單</div><div class="text-lg font-black">{{fmt(capacityResult.orderQty)}} pcs</div></div>
+        <div class="rounded-xl bg-blue-50 p-3"><div class="text-[9px] text-blue-700">需要 Shot</div><div class="text-lg font-black">{{fmt(capacityResult.requiredShots)}} 次</div></div>
+        <div class="rounded-xl bg-blue-50 p-3"><div class="text-[9px] text-blue-700">預估生產時間</div><div class="text-lg font-black">{{capacityResult.productionHours}} hr</div></div>
+        <div class="rounded-xl bg-blue-50 p-3"><div class="text-[9px] text-blue-700">預估工作天</div><div class="text-lg font-black">{{capacityResult.productionDays}} 天</div></div>
+      </div>
+    </div>
+
+    <div class="card border-amber-200 p-4">
+      <div class="flex items-center justify-between"><div class="text-sm font-black">這張訂單要準備多少原料？</div><span class="badge bg-amber-100 text-amber-800">含良率與損耗</span></div>
+      <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div class="rounded-xl bg-amber-50 p-3"><div class="text-[9px] text-amber-700">成品＋不良用料</div><div class="text-lg font-black">{{capacityResult.partResinKg}} kg</div></div>
+        <div class="rounded-xl bg-amber-50 p-3"><div class="text-[9px] text-amber-700">水口總量</div><div class="text-lg font-black">{{capacityResult.runnerGrossKg}} kg</div><div class="text-[9px]">回收後新料 {{capacityResult.runnerVirginKg}} kg</div></div>
+        <div class="rounded-xl bg-amber-50 p-3"><div class="text-[9px] text-amber-700">開機 / 清料損耗</div><div class="text-lg font-black">{{capacityResult.startupLossKg}} kg</div></div>
+        <div class="rounded-xl bg-slate-900 p-3 text-white"><div class="text-[9px] text-slate-300">建議準備新料</div><div class="text-xl font-black">{{capacityResult.totalVirginKg}} kg</div><div class="text-[9px] text-slate-300">{{capacityResult.totalVirginTon}} ton</div></div>
+      </div>
+      <div class="mt-3 text-[10px] text-slate-500">如果不良品也會粉碎回收、或水口回收有固定上限，可再把回收規則做得更細。現在先用「水口回收比例」計算新料需求。</div>
+    </div>
+  </div>
+
+  <div v-else class="card border-dashed p-5 text-center text-xs text-slate-500">請先輸入 Cycle、穴數、產品重量、稼動率、良品率與每日工時。</div>
 </section>
 
 <!-- TUNING -->
@@ -425,7 +492,7 @@ input,select,textarea{min-height:42px}
         <div class="text-[10px] font-bold">Outstanding Machinery Mfg. Co., Ltd.</div>
         <div class="text-[12px] font-black">超群機械工業股份有限公司</div>
       </div>
-      <div class="text-right"><div class="text-[18px] font-black">射出成型機 AI 選型報告</div><div class="text-[8px] text-slate-500">{{reportDate}} ｜ v4.1.1</div></div>
+      <div class="text-right"><div class="text-[18px] font-black">射出成型機 AI 選型報告</div><div class="text-[8px] text-slate-500">{{reportDate}} ｜ v4.2</div></div>
     </div>
 
     <div class="mt-2 grid grid-cols-4 gap-1">
@@ -497,10 +564,15 @@ input,select,textarea{min-height:42px}
       </div>
     </div>
 
-    <div v-if="tco" class="mt-2 rbox"><div class="rtitle text-amber-800">7｜TCO</div>舊機年電費 NT$ {{tco.oldCost.toLocaleString()}} ｜ OMC NT$ {{tco.newCost.toLocaleString()}} ｜ 年省 NT$ {{tco.saving.toLocaleString()}} ｜ 回收期 {{tco.payback}}</div>
+    <div v-if="capacityResult" class="mt-2 rbox"><div class="rtitle text-emerald-800">7｜產能 / 訂單 / 原料</div>
+      良品 {{fmt(capacityResult.goodPcsHour)}} pcs/hr ｜ {{fmt(capacityResult.goodPcsDay)}} pcs/day ｜ 月產 {{fmt(capacityResult.goodPcsMonth)}} pcs
+      <span v-if="capacityResult.orderQty>0"> ｜ 訂單 {{fmt(capacityResult.orderQty)}} pcs：約 {{capacityResult.productionDays}} 工作天 ｜ 建議新料 {{capacityResult.totalVirginKg}} kg</span>
+    </div>
+
+    <div v-if="tco" class="mt-2 rbox"><div class="rtitle text-amber-800">8｜TCO</div>舊機年電費 NT$ {{tco.oldCost.toLocaleString()}} ｜ OMC NT$ {{tco.newCost.toLocaleString()}} ｜ 年省 NT$ {{tco.saving.toLocaleString()}} ｜ 回收期 {{tco.payback}}</div>
 
     <div class="mt-2 border-t pt-1 text-[7.5px] leading-tight text-slate-500">
-      本報告為 OMC 前期 AI 選型摘要。必選條件為客戶指定或產品類別觸發的硬條件；其餘為工程推薦。正式報價 / 下單前仍須依 OMC 最新正式規格、模具圖面、原料 TDS 與試模結果確認。PS 塑化能力不等同所有材料實際塑化能力。
+      本報告為 OMC 前期 AI 選型摘要。必選條件為客戶指定或產品類別觸發的硬條件；其餘為工程推薦。正式報價 / 下單前仍須依 OMC 最新正式規格、模具圖面、原料 TDS 與試模結果確認。PS 塑化能力不等同所有材料實際塑化能力。產能依 Cycle、穴數、稼動率、良品率估算；原料依訂單良率、水口回收與設定損耗估算。
     </div>
   </div>
   <div class="no-print grid grid-cols-2 gap-2"><button @click="exportPdf" class="rounded-xl bg-blue-600 py-3 text-xs font-black text-white">⬇ 匯出完整 PDF</button><button @click="windowPrint" class="rounded-xl border py-3 text-xs font-bold">列印 / 系統另存 PDF</button></div>
@@ -598,6 +670,7 @@ createApp({
   injectionChoice:{unit:'',diameter:null},
   tuning:{defect:'splay',note:''},trials:[],
   energy:{oldKw:null,newKw:null,price:null,extra:0,hours:20,days:300},
+  capacity:{uptime:90,yieldRate:98,hoursDay:20,daysMonth:26,orderQty:1000000,startupLossPct:2,runnerRecyclePct:0},
   project:{company:'',contact:'',name:'PET Test Tube',owner:''}
  }},
  mounted(){try{this.trials=JSON.parse(localStorage.getItem('omc_v3_trials')||'[]');const x=JSON.parse(localStorage.getItem('omc_v31_injection_choice')||'null');if(x)this.injectionChoice=x}catch(e){}},
@@ -634,6 +707,25 @@ createApp({
   autoInjectionCandidates(){return this.result&&this.result.candidates?this.result.candidates:[]},
   recommendedInjection(){return this.result&&this.result.plans&&this.result.plans.length?this.result.plans[0].candidate:null},
   selectedUnitCandidates(){return this.autoInjectionCandidates.filter(x=>x.unit===this.injectionChoice.unit)},
+  capacityResult(){
+   const cycle=Number(this.a.cycle)||0,cav=Math.max(1,Number(this.a.cavities)||this.resolvedCavities||1),part=Number(this.a.partWeight)||0;
+   const uptime=Math.min(100,Math.max(0,Number(this.capacity.uptime)||0))/100,yieldRate=Math.min(100,Math.max(0,Number(this.capacity.yieldRate)||0))/100;
+   const hours=Math.min(24,Math.max(0,Number(this.capacity.hoursDay)||0)),days=Math.max(0,Number(this.capacity.daysMonth)||0),order=Math.max(0,Number(this.capacity.orderQty)||0);
+   if(!(cycle>0&&cav>0&&part>0&&uptime>0&&yieldRate>0&&hours>0))return null;
+   const shotsHour=3600/cycle,theoreticalPcsHour=shotsHour*cav,goodPcsHour=theoreticalPcsHour*uptime*yieldRate,goodPcsDay=goodPcsHour*hours,goodPcsMonth=goodPcsDay*days;
+   const requiredGrossPieces=order>0?order/yieldRate:0,requiredShots=order>0?Math.ceil(requiredGrossPieces/cav):0;
+   const productionHours=order>0?order/goodPcsHour:0,productionDays=order>0?order/goodPcsDay:0;
+   const actualProducedPieces=requiredShots*cav,partResinKg=actualProducedPieces*part/1000;
+   const runnerG=this.a.runnerType==='hot'?0:Math.max(0,Number(this.a.runnerWeight)||0),runnerGrossKg=requiredShots*runnerG/1000;
+   const recycle=Math.min(100,Math.max(0,Number(this.capacity.runnerRecyclePct)||0))/100,runnerVirginKg=runnerGrossKg*(1-recycle);
+   const baseVirgin=partResinKg+runnerVirginKg,startupPct=Math.max(0,Number(this.capacity.startupLossPct)||0)/100,startupLossKg=baseVirgin*startupPct,totalVirginKg=baseVirgin+startupLossKg;
+   return{
+    shotsHour,theoreticalPcsHour,goodPcsHour,goodPcsDay,goodPcsMonth,orderQty:order,requiredShots,
+    productionHours:Math.round(productionHours*10)/10,productionDays:Math.round(productionDays*100)/100,
+    partResinKg:Math.round(partResinKg*100)/100,runnerGrossKg:Math.round(runnerGrossKg*100)/100,runnerVirginKg:Math.round(runnerVirginKg*100)/100,
+    startupLossKg:Math.round(startupLossKg*100)/100,totalVirginKg:Math.round(totalVirginKg*100)/100,totalVirginTon:Math.round(totalVirginKg/1000*1000)/1000
+   }
+  },
   diagnostic(){return DEFECTS[this.tuning.defect]||DEFECTS.short},
   tco(){
    const o=Number(this.energy.oldKw)||0,n=Number(this.energy.newKw)||0,p=Number(this.energy.price)||0,h=Number(this.energy.hours)||0,d=Number(this.energy.days)||0;
@@ -651,6 +743,7 @@ createApp({
   }
  },
  methods:{
+  fmt(v){const n=Number(v)||0;return Math.round(n).toLocaleString('zh-TW')},
   chooseInjectionUnit(unit){this.injectionChoice.unit=unit;const ds=(INJECTION_UNIT_DB[unit]||{}).diam||[];if(!ds.includes(Number(this.injectionChoice.diameter)))this.injectionChoice.diameter=null;try{localStorage.setItem('omc_v31_injection_choice',JSON.stringify(this.injectionChoice))}catch(e){}},
   applyInjectionCandidate(x){this.injectionChoice.unit=x.unit;this.injectionChoice.diameter=x.diameter;try{localStorage.setItem('omc_v31_injection_choice',JSON.stringify(this.injectionChoice))}catch(e){}},
   buildCatalogCandidates(machine,vol,shot,pressureClass){
