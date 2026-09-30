@@ -35,7 +35,7 @@ input,select,textarea{min-height:42px}
 <header class="sticky top-0 z-30 bg-slate-950 px-4 py-4 text-white shadow-lg">
   <div class="flex items-center justify-between gap-3">
     <div><div class="text-[10px] font-bold tracking-[.18em] text-blue-300">OMC 超群機械</div><h1 class="text-lg font-black">Smart Injection Advisor</h1><div class="text-[10px] text-slate-400">客戶只回答知道的資料，系統負責把工程問題整理清楚</div></div>
-    <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v4.2.1</span>
+    <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v4.2.2</span>
   </div>
 </header>
 
@@ -276,6 +276,24 @@ input,select,textarea{min-height:42px}
       <div class="card p-3"><div class="text-[9px] text-slate-500">需求鎖模力</div><div class="text-lg font-black">{{result.requiredTonnage}} T</div></div>
     </div>
 
+    <div v-if="internalMode" class="no-print card border-dashed border-slate-400 bg-slate-50 p-4">
+      <div class="flex items-center justify-between"><div class="text-sm font-black">OMC 內部工程計算</div><span class="badge bg-slate-800 text-white">內部顯示 / PDF 不輸出</span></div>
+      <div class="mt-3 grid grid-cols-2 gap-2 text-[10px] sm:grid-cols-4">
+        <div><span class="text-slate-500">投影面積</span><br><b>{{result.clampCalc.area}} cm²</b></div>
+        <div><span class="text-slate-500">材料基礎係數</span><br><b>{{result.clampCalc.baseCoeff}}</b></div>
+        <div><span class="text-slate-500">產品類別修正</span><br><b>× {{result.clampCalc.categoryFactor}}</b></div>
+        <div><span class="text-slate-500">安全係數</span><br><b>× {{result.clampCalc.safetyFactor}}</b></div>
+      </div>
+      <div class="mt-3 rounded-xl bg-white p-3 font-mono text-[11px]">
+        {{result.clampCalc.area}} × {{result.clampCalc.baseCoeff}} × {{result.clampCalc.categoryFactor}} × {{result.clampCalc.safetyFactor}}
+        = <b>{{result.requiredTonnage}} T</b>
+      </div>
+      <div class="mt-2 grid grid-cols-2 gap-2 text-[10px]">
+        <div>建議機台：<b>{{result.machine.tonnage}} T</b></div>
+        <div>鎖模餘裕：<b>{{result.clampCalc.marginT}} T / {{result.clampCalc.marginPct}}%</b></div>
+      </div>
+    </div>
+
     <div class="card border-emerald-200 p-4">
       <div class="flex items-center justify-between gap-2"><div class="text-sm font-black">三種配置，讓客戶知道差在哪裡</div><span class="badge bg-emerald-100 text-emerald-700">不是只丟一個答案</span></div>
       <div class="mt-3 grid gap-3 md:grid-cols-3">
@@ -495,7 +513,7 @@ input,select,textarea{min-height:42px}
         <div class="text-[10px] font-bold">Outstanding Machinery Mfg. Co., Ltd.</div>
         <div class="text-[12px] font-black">超群機械工業股份有限公司</div>
       </div>
-      <div class="text-right"><div class="text-[18px] font-black">射出成型機 AI 選型報告</div><div class="text-[8px] text-slate-500">{{reportDate}} ｜ v4.2.1</div></div>
+      <div class="text-right"><div class="text-[18px] font-black">射出成型機 AI 選型報告</div><div class="text-[8px] text-slate-500">{{reportDate}} ｜ v4.2.2</div></div>
     </div>
 
     <div class="mt-2 grid grid-cols-4 gap-1">
@@ -653,7 +671,7 @@ const DEFECTS={
 
 createApp({
  data(){return{
-  tab:'advisor',step:1,path:'quick',result:null,
+  tab:'advisor',step:1,path:'quick',result:null,internalMode:false,
   precisionOptions:[{v:'general',t:'一般'},{v:'precision',t:'精密'},{v:'medical',t:'醫療'},{v:'optical',t:'光學'},{v:'appearance',t:'高外觀'}],
   missionOptions:[
     {v:'general',icon:'🔄',t:'泛用 / 未來型',d:'現在先做這個產品，未來還會換模、換產品。'},
@@ -682,7 +700,13 @@ createApp({
   capacity:{uptime:90,yieldRate:98,hoursDay:20,daysMonth:26,orderQty:1000000,startupLossPct:2,runnerRecyclePct:0},
   project:{company:'',contact:'',name:'PET Test Tube',owner:''}
  }},
- mounted(){try{this.trials=JSON.parse(localStorage.getItem('omc_v3_trials')||'[]');const x=JSON.parse(localStorage.getItem('omc_v31_injection_choice')||'null');if(x)this.injectionChoice=x}catch(e){}},
+ mounted(){
+  try{
+    this.internalMode=new URLSearchParams(window.location.search).get('internal')==='1';
+    this.trials=JSON.parse(localStorage.getItem('omc_v3_trials')||'[]');
+    const x=JSON.parse(localStorage.getItem('omc_v31_injection_choice')||'null');if(x)this.injectionChoice=x
+  }catch(e){}
+},
  watch:{'injectionChoice.diameter'(){try{localStorage.setItem('omc_v31_injection_choice',JSON.stringify(this.injectionChoice))}catch(e){}}},
  computed:{
   reportDate(){return new Date().toLocaleDateString('zh-TW')},
@@ -866,9 +890,11 @@ createApp({
    let area=Number(this.a.exactArea)||0,areaSource='工程輸入的總投影面積';
    if(!(area>0)){area=((Number(this.a.projL)||0)*(Number(this.a.projW)||0)/100)*cav;areaSource='由產品最大投影尺寸 × 穴數估算'}
    if(!(area>0)){alert('至少需要產品投影長、寬，或工程總投影面積。');return}
-   let clampCoeff=m.clamp;
-   if(['thinwall','packaging'].includes(this.a.productCategory))clampCoeff*=1.12;
-   const required=area*clampCoeff*1.2;
+   const baseClampCoeff=m.clamp;
+   const categoryFactor=['thinwall','packaging'].includes(this.a.productCategory)?1.12:1;
+   const safetyFactor=1.2;
+   const clampCoeff=baseClampCoeff*categoryFactor;
+   const required=area*clampCoeff*safetyFactor;
    let machine=MACHINE_DB.find(x=>x.tonnage>=required)||MACHINE_DB[MACHINE_DB.length-1];
    if(this.a.hasMold){
     const mw=Number(this.a.moldW)||0,mh=Number(this.a.moldH)||0;
@@ -904,7 +930,10 @@ createApp({
    let confidence=this.path==='engineering'?62:48;if(this.a.grade)confidence+=5;if(Number(this.a.exactArea)>0)confidence+=10;if(this.a.hasMold&&Number(this.a.moldW)>0&&Number(this.a.moldH)>0)confidence+=8;if(cycle)confidence+=5;if(Number(this.a.knownPressure)>0)confidence+=5;if(Number(this.a.meteringWindow)>0)confidence+=3;confidence=Math.min(95,confidence);
    const lengths=machine.units.map(x=>x.length),lengthRange=Math.min(...lengths)+'–'+Math.max(...lengths)+' mm（依射座）';
    const drive=this.driveRequirement;
-   const base={machine,machineModel:'OS'+machine.tonnage+drive.model,drive,confidence,shotWeight:Math.round(shot*100)/100,shotVolume:Math.round(vol*10)/10,runnerStatus:this.a.runnerType==='hot'?'熱澆道：水口以 0 計':(Number(this.a.runnerWeight)>0?'已含水口':'冷澆道但水口重量未補'),area:Math.round(area*10)/10,areaSource,requiredTonnage:Math.round(required*10)/10,units:machine.units.map(x=>x.unit).join(' / '),lengthRange,moldFit,candidates,
+   const base={machine,machineModel:'OS'+machine.tonnage+drive.model,drive,confidence,shotWeight:Math.round(shot*100)/100,shotVolume:Math.round(vol*10)/10,runnerStatus:this.a.runnerType==='hot'?'熱澆道：水口以 0 計':(Number(this.a.runnerWeight)>0?'已含水口':'冷澆道但水口重量未補'),area:Math.round(area*10)/10,areaSource,requiredTonnage:Math.round(required*10)/10,
+    clampCalc:{area:Math.round(area*10)/10,baseCoeff:Math.round(baseClampCoeff*1000)/1000,categoryFactor:Math.round(categoryFactor*100)/100,safetyFactor,
+      marginT:Math.round((machine.tonnage-required)*10)/10,marginPct:Math.round(((machine.tonnage-required)/machine.tonnage*100)*10)/10},
+    units:machine.units.map(x=>x.unit).join(' / '),lengthRange,moldFit,candidates,
     screw:{capacityMin:Math.round(vol/.7*10)/10,capacityMax:Math.round(vol/.3*10)/10,plasticizing:requiredKgH>0?Math.round(requiredKgH*10)/10+' kg/h':'待 Cycle / 計量時間',pressureClass:pressure,pressureReason,diameterAnswer:'依用途策略＋型錄數據自動推薦',ld:m.ld,ldReason:m.ldReason,checkRing,checkReason,barrel,barrelReason}};
    this.result=base;
    const p1=this.explainPlan(omc,'omc',machine),p2=this.explainPlan(dedicated,'dedicated',machine),p3=this.explainPlan(future,'future',machine);
@@ -957,11 +986,11 @@ createApp({
     const img=canvas.toDataURL('image/jpeg',0.98);
     const {jsPDF}=window.jspdf;
     const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
-    const pageW=210,pageH=297,margin=4,availW=pageW-margin*2,availH=pageH-margin*2;
+    const pageW=210,pageH=297,margin=4,availW=pageW-margin*2,availH=pageH-margin-4;
     const ratio=canvas.width/canvas.height;
     let drawW=availW,drawH=drawW/ratio;
     if(drawH>availH){drawH=availH;drawW=drawH*ratio}
-    const x=(pageW-drawW)/2,y=(pageH-drawH)/2;
+    const x=(pageW-drawW)/2,y=4;
     pdf.addImage(img,'JPEG',x,y,drawW,drawH,undefined,'FAST');
     pdf.save(fn);
    }finally{host.remove()}
