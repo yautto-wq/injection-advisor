@@ -1,721 +1,470 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="description" content="OMC Smart Injection Advisor 2.2：智慧選機、2D CAD 尺寸初判、模具與廠房適配、產能、現場調機、節能 TCO 與完整 PDF 報告。">
-  <title>OMC Smart Injection Advisor 2.2</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <style>
-    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
-    [v-cloak]{display:none}
-    input,select,textarea{min-height:40px}
-    .omc-brand{position:relative;display:inline-block;overflow:hidden;color:#bfdbfe;letter-spacing:.12em}
-    .omc-brand::after{content:"";position:absolute;inset:0;transform:translateX(-140%) skewX(-18deg);background:linear-gradient(90deg,transparent,rgba(219,234,254,.8),transparent);animation:shine 4.8s ease-in-out infinite}
-    @keyframes shine{0%,58%{transform:translateX(-140%) skewX(-18deg)}82%,100%{transform:translateX(140%) skewX(-18deg)}}
-    @media(prefers-reduced-motion:reduce){.omc-brand::after{animation:none}}
-    .report-sheet{background:#fff;color:#0f172a}
-    @media print{
-      body{background:#fff!important}
-      #app{max-width:none!important;box-shadow:none!important}
-      .no-print{display:none!important}
-      .report-sheet{box-shadow:none!important;border:none!important}
-      .avoid-break{break-inside:avoid}
-      .page-break{break-before:page}
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="description" content="OMC Smart Injection Advisor 3.0：以客戶核心資訊完成射出機、模具、射出單元、產能、調機與 TCO 前期評估。">
+<title>OMC Smart Injection Advisor 3.0</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+[v-cloak]{display:none}.card{border:1px solid #e2e8f0;border-radius:16px;background:#fff}.qbtn{border:1px solid #cbd5e1;border-radius:14px;padding:14px;text-align:left;transition:.15s}.qbtn:hover{border-color:#2563eb;background:#eff6ff}.qbtn.on{border-color:#2563eb;background:#eff6ff;box-shadow:0 0 0 1px #2563eb inset}
+.badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:700}
+input,select,textarea{min-height:42px}.report-sheet{background:#fff;color:#0f172a}
+@media print{.no-print{display:none!important}.report-sheet{border:0!important;box-shadow:none!important}.avoid-break{break-inside:avoid}body{background:#fff!important}}
+</style>
 </head>
-<body class="bg-slate-100 text-slate-800 antialiased min-h-screen">
-<div id="app" v-cloak class="max-w-3xl mx-auto bg-white min-h-screen shadow-xl pb-10">
-  <header class="bg-slate-950 text-white px-4 py-4 sticky top-0 z-30 shadow-lg">
-    <div class="flex items-center justify-between gap-3">
-      <div>
-        <div class="omc-brand text-[11px] font-semibold uppercase">OMC 超群機械</div>
-        <h1 class="mt-1 text-lg font-black">Smart Injection Advisor</h1>
-        <p class="mt-1 text-[11px] text-slate-400">選機・2D CAD・模具・廠房・產能・調機・節能 TCO</p>
-      </div>
-      <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v2.2</span>
-    </div>
-  </header>
+<body class="bg-slate-100 text-slate-800">
+<div id="app" v-cloak class="mx-auto min-h-screen max-w-4xl bg-white shadow-xl">
+<header class="sticky top-0 z-30 bg-slate-950 px-4 py-4 text-white shadow-lg">
+  <div class="flex items-center justify-between gap-3">
+    <div><div class="text-[10px] font-bold tracking-[.18em] text-blue-300">OMC 超群機械</div><h1 class="text-lg font-black">Smart Injection Advisor</h1><div class="text-[10px] text-slate-400">客戶只回答知道的資料，系統負責把工程問題整理清楚</div></div>
+    <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v3.0</span>
+  </div>
+</header>
 
-  <div class="no-print sticky top-[89px] z-20 grid grid-cols-5 border-b bg-white text-center text-[10px] font-bold shadow-sm">
-    <button @click="tab='selection'" class="py-3" :class="tab==='selection'?'bg-blue-600 text-white':'text-slate-600'">01 選機</button>
-    <button @click="tab='production'" class="py-3" :class="tab==='production'?'bg-emerald-600 text-white':'text-slate-600'">02 產能</button>
-    <button @click="tab='tuning'" class="py-3" :class="tab==='tuning'?'bg-violet-600 text-white':'text-slate-600'">03 調機</button>
-    <button @click="tab='energy'" class="py-3" :class="tab==='energy'?'bg-amber-500 text-white':'text-slate-600'">04 TCO</button>
-    <button @click="tab='report'" class="py-3" :class="tab==='report'?'bg-slate-900 text-white':'text-slate-600'">05 報告</button>
+<nav class="no-print sticky top-[82px] z-20 grid grid-cols-4 border-b bg-white text-center text-[11px] font-bold shadow-sm">
+  <button @click="tab='advisor'" class="py-3" :class="tab==='advisor'?'bg-blue-600 text-white':'text-slate-600'">AI 選型</button>
+  <button @click="tab='tuning'" class="py-3" :class="tab==='tuning'?'bg-violet-600 text-white':'text-slate-600'">調機助手</button>
+  <button @click="tab='tco'" class="py-3" :class="tab==='tco'?'bg-amber-500 text-white':'text-slate-600'">節能 TCO</button>
+  <button @click="tab='report'" class="py-3" :class="tab==='report'?'bg-slate-900 text-white':'text-slate-600'">完整報告</button>
+</nav>
+
+<main class="space-y-4 p-4">
+
+<!-- ADVISOR -->
+<section v-if="tab==='advisor'" class="space-y-4">
+  <div class="rounded-2xl bg-gradient-to-br from-blue-950 to-slate-900 p-5 text-white">
+    <div class="text-xs font-bold text-blue-300">OMC AI 選機流程</div>
+    <div class="mt-1 text-2xl font-black">不用先懂射出機，告訴我你現在知道什麼</div>
+    <p class="mt-2 max-w-2xl text-xs leading-relaxed text-slate-300">有產品資料就走快速選型；有模具、CAD、實測 Shot 或投影面積就走工程精準選型。兩條路最後都會產生同一份 OMC 規格報告。</p>
   </div>
 
-  <main class="p-4 space-y-4">
+  <div class="grid grid-cols-5 gap-1 text-center text-[9px] font-bold text-slate-500">
+    <div v-for="n in 5" :key="n" class="rounded-full py-2" :class="step===n?'bg-blue-600 text-white':(step>n?'bg-blue-100 text-blue-700':'bg-slate-100')">{{n}} {{['入口','材料','產品','模具','答案'][n-1]}}</div>
+  </div>
 
-    <!-- 01 SELECTION -->
-    <section v-if="tab==='selection'" class="space-y-4">
-      <div class="rounded-2xl bg-gradient-to-br from-blue-950 to-slate-900 p-4 text-white shadow">
-        <div class="text-xs font-bold text-blue-300">01 智慧選機＋模具＋廠房</div>
-        <div class="mt-1 text-xl font-black">一次確認做得了、模具裝得下、工廠放得進去</div>
-        <p class="mt-2 text-xs leading-relaxed text-slate-300">可以手動輸入產品 / 模具資料，也可以上傳 2D DXF 做外框尺寸初判。CAD 自動結果一定要人工確認後才套用。</p>
-      </div>
+  <!-- STEP 1 -->
+  <section v-if="step===1" class="space-y-3">
+    <div class="text-center"><h2 class="text-xl font-black">你目前手上有哪一種資料？</h2><p class="mt-1 text-xs text-slate-500">兩種都可以得到答案，資料越完整，可信度越高。</p></div>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <button @click="path='quick';step=2" class="qbtn">
+        <div class="text-2xl">🟦</div><div class="mt-2 text-base font-black">快速 AI 選型</div>
+        <p class="mt-1 text-xs leading-relaxed text-slate-500">我只有成品尺寸、重量、材料、水口或大概產量。沒有模具圖也可以開始。</p>
+        <div class="mt-3 text-[10px] font-bold text-blue-700">適合：新客戶 / 業務初談 / 尚未開模</div>
+      </button>
+      <button @click="path='engineering';step=2" class="qbtn">
+        <div class="text-2xl">🟪</div><div class="mt-2 text-base font-black">工程精準選型</div>
+        <p class="mt-1 text-xs leading-relaxed text-slate-500">我有模具尺寸、CAD、總投影面積、每模重量或現有機台數據。</p>
+        <div class="mt-3 text-[10px] font-bold text-violet-700">適合：既有模具 / 換機 / 工程確認</div>
+      </button>
+    </div>
+  </section>
 
-      <section class="rounded-xl border border-blue-100 bg-blue-50/50 p-3 space-y-3">
-        <div class="text-sm font-black text-blue-950">A. 產品資料</div>
-        <div class="grid grid-cols-5 gap-1 text-[10px] font-semibold">
-          <button @click="mode=1" :class="mode===1?'bg-blue-600 text-white':'bg-white border text-slate-600'" class="rounded-lg px-1 py-2">精準</button>
-          <button @click="mode=2" :class="mode===2?'bg-blue-600 text-white':'bg-white border text-slate-600'" class="rounded-lg px-1 py-2">2D尺寸</button>
-          <button @click="mode=3" :class="mode===3?'bg-blue-600 text-white':'bg-white border text-slate-600'" class="rounded-lg px-1 py-2">克重+穴數</button>
-          <button @click="mode=4" :class="mode===4?'bg-blue-600 text-white':'bg-white border text-slate-600'" class="rounded-lg px-1 py-2">3D數據</button>
-          <button @click="mode=5" :class="mode===5?'bg-blue-600 text-white':'bg-white border text-slate-600'" class="rounded-lg px-1 py-2">舊機置換</button>
-        </div>
+  <!-- STEP 2 -->
+  <section v-if="step===2" class="space-y-4">
+    <div><div class="text-xs font-bold text-blue-700">第 2 步</div><h2 class="text-xl font-black">先告訴我材料與產品要求</h2><p class="text-xs text-slate-500">不知道的可以選「不知道」，不會卡住流程。</p></div>
 
-        <div v-if="mode===1" class="grid grid-cols-2 gap-2">
-          <label class="text-[11px] font-semibold">總投影面積 cm²<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="form1.area"></label>
-          <label class="text-[11px] font-semibold">每模總射出重量 g<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="form1.weight"></label>
-        </div>
-
-        <div v-if="mode===2">
-          <div class="grid grid-cols-3 gap-2">
-            <label class="text-[11px] font-semibold">產品長 mm<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="form2.length"></label>
-            <label class="text-[11px] font-semibold">產品寬 mm<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="form2.width"></label>
-            <label class="text-[11px] font-semibold">平均壁厚 mm<input class="mt-1 w-full rounded border p-2" type="number" step="0.1" v-model.number="form2.thickness"></label>
-          </div>
-          <div class="mt-2 rounded bg-white p-2 text-[11px] text-blue-800">矩形包絡推算投影面積：約 <b>{{mode2Area}} cm²</b>（前期粗估）</div>
-        </div>
-
-        <div v-if="mode===3">
-          <div class="grid grid-cols-2 gap-2">
-            <label class="text-[11px] font-semibold">單件重量 g<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="form3.singleWeight"></label>
-            <label class="text-[11px] font-semibold">模具穴數<input class="mt-1 w-full rounded border p-2" min="1" type="number" v-model.number="form3.cavities"></label>
-          </div>
-          <div class="mt-2 rounded border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-800">⚠️ 沒有投影面積時會以重量做初估；正式鎖模力應優先使用 CAD / 真實投影面積。</div>
-        </div>
-
-        <div v-if="mode===4" class="grid grid-cols-2 gap-2">
-          <label class="text-[11px] font-semibold">3D 總體積 cm³<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="form4.volume"></label>
-          <label class="text-[11px] font-semibold">3D 投影面積 cm²<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="form4.projArea"></label>
-        </div>
-
-        <div v-if="mode===5">
-          <div class="grid grid-cols-2 gap-2">
-            <label class="text-[11px] font-semibold">現有舊機噸數 T<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="form5.oldTonnage"></label>
-            <label class="text-[11px] font-semibold">現有每模總射出重量 g<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="form5.shotWeight" placeholder="不知道可留空"></label>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2 border-t border-blue-100 pt-3">
-          <label class="text-[11px] font-semibold">材料
-            <select class="mt-1 w-full rounded border bg-white p-2" v-model="material">
-              <option value="PP">PP</option><option value="ABS">ABS</option><option value="PET">PET</option><option value="PC">PC</option><option value="PA_GF">PA + 玻纖</option>
-            </select>
-          </label>
-          <label class="text-[11px] font-semibold">希望配置
-            <select class="mt-1 w-full rounded border bg-white p-2" v-model="driveType">
-              <option value="EH">EH｜傳統馬達</option>
-              <option value="EH-DS">EH-DS｜伺服</option>
-              <option value="EHIII">EHIII｜傳統＋氮氣瓶</option>
-              <option value="EHIII-DS">EHIII-DS｜伺服＋氮氣瓶</option>
-            </select>
-          </label>
-        </div>
-      </section>
-
-      <section class="rounded-xl border border-violet-200 bg-violet-50/50 p-3 space-y-3">
-        <div class="flex items-center justify-between gap-2">
-          <div class="text-sm font-black text-violet-950">B. 模具資料 / 2D CAD</div>
-          <span class="rounded bg-violet-700 px-2 py-1 text-[9px] text-white">DXF 測試版</span>
-        </div>
-
-        <div class="rounded-lg border border-dashed border-violet-300 bg-white p-3">
-          <label class="block text-[11px] font-bold text-violet-900">上傳模具 2D 圖
-            <input class="mt-2 block w-full text-[10px]" type="file" accept=".dxf,.dwg,.pdf,.png,.jpg,.jpeg" @change="handleCadUpload">
-          </label>
-          <p class="mt-2 text-[10px] leading-relaxed text-slate-500">目前自動計算優先支援 ASCII DXF。DWG / PDF / JPG 可先上傳記錄檔名，但本純前端版本不會假裝已辨識尺寸。DXF 外框可能包含圖框、標註或其他物件，結果必須人工確認。</p>
-        </div>
-
-        <div v-if="cad.name" class="rounded-lg border bg-white p-3 text-[11px]">
-          <div class="flex items-center justify-between gap-2">
-            <div><b>{{cad.name}}</b><div class="text-[10px] text-slate-500">{{cad.status}}</div></div>
-            <span class="rounded px-2 py-1 text-[9px] font-bold" :class="cad.ok?'bg-green-100 text-green-700':'bg-amber-100 text-amber-800'">{{cad.ok?'已取得尺寸':'待人工確認'}}</span>
-          </div>
-          <div v-if="cad.ok" class="mt-2 grid grid-cols-2 gap-2">
-            <div class="rounded bg-violet-50 p-2">推算外框寬<br><b class="text-base">{{cad.widthMm}} mm</b></div>
-            <div class="rounded bg-violet-50 p-2">推算外框高<br><b class="text-base">{{cad.heightMm}} mm</b></div>
-          </div>
-          <div v-if="cad.ok" class="mt-2 text-[10px] text-slate-500">圖面單位：{{cad.unitLabel}}；來源：{{cad.method}}。若圖面含圖框或標註，外框可能不是模具本體尺寸。</div>
-          <button v-if="cad.ok" @click="applyCadToMold" class="mt-2 w-full rounded-lg bg-violet-600 py-2 text-[10px] font-bold text-white">確認後套用到模具寬 / 高</button>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-[11px] font-semibold">模具外觀寬 mm<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="mold.width"></label>
-          <label class="text-[11px] font-semibold">模具外觀高 mm<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="mold.height"></label>
-          <label class="text-[11px] font-semibold">模具厚度 mm（可選）<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="mold.depth"></label>
-          <label class="text-[11px] font-semibold">需求開模距離 mm（可選）<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="mold.opening"></label>
-        </div>
-        <div class="rounded bg-white p-2 text-[10px] text-slate-500">目前模厚、最大開距、頂出行程等欄位先保留；OMC 官方規格資料庫補齊前不以猜測值判定。</div>
-      </section>
-
-      <section class="rounded-xl border border-indigo-200 bg-indigo-50/50 p-3 space-y-3">
-        <div class="text-sm font-black text-indigo-950">C. 廠房可用空間</div>
-        <div class="grid grid-cols-3 gap-2">
-          <label class="text-[10px] font-semibold">可用長度 mm<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="factory.length"></label>
-          <label class="text-[10px] font-semibold">可用寬度 mm<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="factory.width"></label>
-          <label class="text-[10px] font-semibold">可用高度 mm<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="factory.height"></label>
-        </div>
-        <div class="grid grid-cols-3 gap-2">
-          <label class="text-[10px]">長度額外預留<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="factory.reserveLength"></label>
-          <label class="text-[10px]">寬度額外預留<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="factory.reserveWidth"></label>
-          <label class="text-[10px]">上方額外預留<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="factory.reserveHeight"></label>
-        </div>
-      </section>
-
-      <button @click="calculateSelection" class="w-full rounded-xl bg-blue-600 py-3 text-sm font-black text-white shadow">⚡ 執行完整選機評估</button>
-
-      <section v-if="selectionResult" class="space-y-3">
-        <div class="rounded-2xl bg-gradient-to-r from-slate-950 to-slate-800 p-4 text-white shadow">
-          <div class="text-[10px] font-bold uppercase tracking-wider text-blue-300">OMC 智慧選機結果</div>
-          <div class="mt-1 text-2xl font-black">{{selectionResult.machineModel}}</div>
-          <div class="mt-2 flex flex-wrap gap-2 text-[11px]">
-            <span class="rounded bg-slate-700 px-2 py-1">需求鎖模力 {{selectionResult.requiredTonnage}}T</span>
-            <span class="rounded bg-blue-600 px-2 py-1">建議級距 {{selectionResult.selectedTonnage}}T</span>
-            <span class="rounded bg-slate-700 px-2 py-1">射量 {{selectionResult.utilizationText}}</span>
-          </div>
-        </div>
-        <div class="grid grid-cols-3 gap-2 text-center text-[10px]">
-          <div class="rounded-xl border p-3" :class="selectionResult.tonnageOk?'bg-green-50 text-green-700':'bg-red-50 text-red-700'"><b>鎖模力</b><br><span class="text-sm font-black">{{selectionResult.tonnageOk?'✅ 合格':'❌ 不足'}}</span></div>
-          <div class="rounded-xl border p-3" :class="selectionResult.fitmentOk?'bg-green-50 text-green-700':'bg-red-50 text-red-700'"><b>模具柱間距</b><br><span class="text-sm font-black">{{selectionResult.fitmentOk?'✅ 可容納':'❌ 不可容納'}}</span></div>
-          <div class="rounded-xl border p-3" :class="factorySummary.status==='ok'?'bg-green-50 text-green-700':(factorySummary.status==='warn'?'bg-amber-50 text-amber-800':'bg-red-50 text-red-700')"><b>廠房空間</b><br><span class="text-sm font-black">{{factorySummary.label}}</span></div>
-        </div>
-        <div v-if="selectionResult.moldFitDetail" class="rounded-xl border border-violet-200 bg-violet-50 p-3 text-[11px] text-violet-950">
-          <b>模具安裝判定：</b>{{selectionResult.moldFitDetail.reason}}
-          <div class="mt-1 text-[10px] text-violet-700">目前判定同時使用模板尺寸與柱間淨距，並測試原方向 / 旋轉 90°；不再把「兩個模具尺寸都必須小於柱間」當成硬限制。</div>
-        </div>
-
-        <div class="rounded-xl border border-indigo-200 bg-indigo-50/50 p-3">
-          <div class="text-xs font-black text-indigo-950">建議級距占地版本</div>
-          <div class="mt-2 space-y-2">
-            <div v-for="item in footprintOptions" :key="item.unit" class="rounded-lg border bg-white p-3">
-              <div class="flex items-center justify-between">
-                <b>OS-{{selectionResult.selectedTonnage}} / {{item.unit}}</b>
-                <span class="rounded px-2 py-1 text-[9px] font-bold" :class="item.fitWithReserve?'bg-green-100 text-green-700':(item.rawFit?'bg-amber-100 text-amber-800':'bg-red-100 text-red-700')">{{item.fitWithReserve?'✅ 含預留可放':(item.rawFit?'⚠️ 裸機可放':'❌ 空間不足')}}</span>
-              </div>
-              <div class="mt-1 grid grid-cols-2 gap-1 text-[10px] text-slate-600">
-                <div>裸機：約 {{item.length}} × {{item.width}} × {{item.height}}</div>
-                <div>占地：約 {{item.areaM2}} m²</div>
-                <div>含預留：{{item.needLength}} × {{item.needWidth}} × {{item.needHeight}}</div>
-                <div>型錄 L={{item.baseL}} / D1={{item.d1}} / H1={{item.h1}}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <button @click="tab='production'" class="no-print w-full rounded-xl bg-emerald-600 py-3 text-xs font-bold text-white">下一步：產能分析 →</button>
-      </section>
-    </section>
-
-    <!-- 02 PRODUCTION -->
-    <section v-if="tab==='production'" class="space-y-4">
-      <div class="rounded-2xl bg-gradient-to-br from-emerald-950 to-slate-900 p-4 text-white shadow">
-        <div class="text-xs font-bold text-emerald-300">02 Cycle Time / 產能</div>
-        <div class="mt-1 text-xl font-black">用實測週期優先，沒有實測才使用前期估算</div>
-      </div>
-
-      <section class="rounded-xl border border-cyan-200 bg-cyan-50/60 p-3 space-y-3">
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-[11px] font-semibold">平均壁厚 mm<input class="mt-1 w-full rounded border p-2" type="number" step="0.1" v-model.number="avgWallThickness"></label>
-          <label class="text-[11px] font-semibold">實測 Cycle Time 秒<input class="mt-1 w-full rounded border p-2" type="number" step="0.1" v-model.number="production.actualCycle" placeholder="可留空"></label>
-        </div>
-        <div v-if="cycleEstimate" class="grid grid-cols-4 gap-1 text-center text-[10px]">
-          <div class="rounded bg-white p-2">充填<br><b>{{cycleEstimate.fill}}s</b></div>
-          <div class="rounded bg-white p-2">保壓<br><b>{{cycleEstimate.hold}}s</b></div>
-          <div class="rounded bg-white p-2">冷卻<br><b>{{cycleEstimate.cooling}}s</b></div>
-          <div class="rounded bg-white p-2">開閉模<br><b>{{cycleEstimate.dry}}s</b></div>
-        </div>
-        <div v-if="effectiveCycle>0" class="rounded-lg bg-cyan-700 p-3 text-center text-white"><div class="text-[10px]">目前採用週期</div><div class="text-2xl font-black">{{effectiveCycle}} 秒</div><div class="text-[10px]">{{production.actualCycle>0?'現場實測':'系統前期估算'}}</div></div>
-      </section>
-
-      <section class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3">
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-[10px]">穴數<input class="mt-1 w-full rounded border p-2" type="number" min="1" v-model.number="production.cavities"></label>
-          <label class="text-[10px]">稼動率 %<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="production.uptime"></label>
-          <label class="text-[10px]">良率 %<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="production.yieldRate"></label>
-          <label class="text-[10px]">每天運轉 hr<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="production.hoursPerDay"></label>
-          <label class="text-[10px]">每月工作日<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="production.daysPerMonth"></label>
-          <label class="text-[10px]">客戶月需求 pcs<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="production.monthlyDemand"></label>
-        </div>
-      </section>
-
-      <section v-if="productionMetrics" class="rounded-xl border p-3">
-        <div class="grid grid-cols-2 gap-2 text-[11px]">
-          <div class="rounded bg-slate-50 p-3">理論產量<br><b class="text-base">{{productionMetrics.theoreticalHourly.toLocaleString()}} pcs/hr</b></div>
-          <div class="rounded bg-slate-50 p-3">估算良品<br><b class="text-base">{{productionMetrics.goodHourly.toLocaleString()}} pcs/hr</b></div>
-          <div class="rounded bg-slate-50 p-3">每日良品<br><b class="text-base">{{productionMetrics.dailyGood.toLocaleString()}} pcs</b></div>
-          <div class="rounded bg-slate-50 p-3">每月良品<br><b class="text-base">{{productionMetrics.monthlyGood.toLocaleString()}} pcs</b></div>
-          <div class="col-span-2 rounded bg-emerald-900 p-3 text-white">依月需求估算設備數<br><b class="text-xl">{{productionMetrics.requiredMachinesText}}</b></div>
-        </div>
-      </section>
-      <button @click="tab='tuning'" class="no-print w-full rounded-xl bg-violet-600 py-3 text-xs font-bold text-white">下一步：現場調機助手 →</button>
-    </section>
-
-    <!-- 03 TUNING -->
-    <section v-if="tab==='tuning'" class="space-y-4">
-      <div class="rounded-2xl bg-gradient-to-br from-violet-950 to-slate-900 p-4 text-white shadow">
-        <div class="text-xs font-bold text-violet-300">03 現場調機助手</div>
-        <div class="mt-1 text-xl font-black">依材料、射量、參數與缺陷，給「調整方向與優先順序」</div>
-        <p class="mt-2 text-xs leading-relaxed text-slate-300">目前測試版採工程知識庫＋案件資料做多因子排序；不是把未累積的 OMC 案例假裝成統計大數據。之後可再接後台，把每次試模結果累積成 OMC 自有案例資料庫。</p>
-      </div>
-
-      <section class="rounded-xl border border-violet-200 bg-violet-50/50 p-3 space-y-3">
-        <div class="text-sm font-black text-violet-950">A. 螺桿計量與塑化</div>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-[10px]">螺桿直徑 mm<input class="mt-1 w-full rounded border p-2" type="number" step="0.1" v-model.number="tuning.screwDiameter"></label>
-          <label class="text-[10px]">計量行程 mm<input class="mt-1 w-full rounded border p-2" type="number" step="0.1" v-model.number="tuning.meteringStroke"></label>
-          <label class="text-[10px]">計量效率 %<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="tuning.meteringEfficiency"></label>
-          <label class="text-[10px]">螺桿轉速 rpm<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="tuning.screwRpm"></label>
-          <label class="text-[10px]">背壓（面板值 / 待註明單位）<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="tuning.backPressure"></label>
-          <label class="text-[10px]">材料牌號<input class="mt-1 w-full rounded border p-2" v-model="tuning.grade" placeholder="例如 Makrolon xxxx / PET bottle grade"></label>
-        </div>
-        <div v-if="meteringCalc" class="grid grid-cols-2 gap-2 text-[11px]">
-          <div class="rounded bg-white p-3">有效熔膠體積<br><b class="text-base">{{meteringCalc.volume}} cm³</b></div>
-          <div class="rounded bg-white p-3">材料重量估算<br><b class="text-base">{{meteringCalc.weight}} g</b></div>
-          <div class="rounded bg-white p-3">螺桿周速<br><b class="text-base">{{meteringCalc.peripheralSpeed}} m/s</b></div>
-          <div class="rounded bg-white p-3">與目前射出重量比較<br><b class="text-base">{{meteringCalc.capacityUseText}}</b></div>
-        </div>
-        <p class="text-[10px] leading-relaxed text-slate-500">轉速建議最好以螺桿周速＋材料牌號 TDS 判斷；相同 rpm 在不同螺桿直徑下的剪切程度不同。背壓也必須區分機台面板壓力與塑料比背壓，不能把不同定義的 bar 直接混用。</p>
-      </section>
-
-      <section class="rounded-xl border border-cyan-200 bg-cyan-50/60 p-3 space-y-3">
-        <div class="text-sm font-black text-cyan-950">B. 材料工藝快查</div>
-        <div class="rounded-lg bg-white p-3">
-          <div class="flex items-center justify-between"><b class="text-base">{{material}}</b><span class="rounded bg-cyan-100 px-2 py-1 text-[9px] text-cyan-800">{{materialQuick.absorption}}</span></div>
-          <div class="mt-2 grid grid-cols-2 gap-2 text-[11px]">
-            <div>乾燥：<b>{{materialQuick.drying}}</b></div>
-            <div>設備：<b>{{materialQuick.dryer}}</b></div>
-            <div>熔膠溫度：<b>{{materialQuick.melt}}</b></div>
-            <div>模溫：<b>{{materialQuick.moldTemp}}</b></div>
-          </div>
-          <div class="mt-2 rounded bg-slate-50 p-2 text-[10px] text-slate-500">{{materialQuick.note}}</div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-[10px]">實際乾燥溫度 °C<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="tuning.dryingTemp"></label>
-          <label class="text-[10px]">實際乾燥時間 hr<input class="mt-1 w-full rounded border p-2" type="number" step="0.1" v-model.number="tuning.dryingHours"></label>
-          <label class="text-[10px]">實際熔膠溫度 °C<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="tuning.meltTemp"></label>
-          <label class="text-[10px]">實際模具溫度 °C<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="tuning.moldTemp"></label>
-        </div>
-      </section>
-
-      <section class="rounded-xl border border-rose-200 bg-rose-50/50 p-3 space-y-3">
-        <div class="text-sm font-black text-rose-950">C. 成型缺陷診斷</div>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-[10px]">目前缺陷
-            <select class="mt-1 w-full rounded border bg-white p-2" v-model="tuning.defect">
-              <option value="sink">縮水 / 凹痕</option>
-              <option value="flash">毛邊 / 飛邊</option>
-              <option value="short">短射 / 充填不足</option>
-              <option value="weld">結合線 / 熔接線</option>
-              <option value="splay">銀紋 / 水氣紋</option>
-              <option value="burn">燒焦 / 柴油效應</option>
-              <option value="void">氣泡 / 真空孔洞</option>
-              <option value="warp">翹曲</option>
-              <option value="jetting">噴射紋</option>
-              <option value="black">黑點 / 劣化</option>
-              <option value="demold">脫模不良</option>
-            </select>
-          </label>
-          <label class="text-[10px]">嚴重程度
-            <select class="mt-1 w-full rounded border bg-white p-2" v-model="tuning.severity"><option>輕微</option><option>中等</option><option>嚴重</option></select>
-          </label>
-          <label class="text-[10px]">射出速度 % / 相對值<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="tuning.injectionSpeed"></label>
-          <label class="text-[10px]">保壓 % / 相對值<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="tuning.holdPressure"></label>
-        </div>
-
-        <div class="rounded-xl border bg-white p-3">
-          <div class="flex items-center justify-between">
-            <div><b>{{diagnosticPlan.title}}</b><div class="text-[10px] text-slate-500">可信度：{{diagnosticPlan.confidence}}</div></div>
-            <span class="rounded bg-rose-100 px-2 py-1 text-[9px] font-bold text-rose-700">{{tuning.severity}}</span>
-          </div>
-          <div class="mt-3">
-            <div class="text-[10px] font-bold text-slate-500">先檢查</div>
-            <ol class="mt-1 list-decimal space-y-1 pl-5 text-[11px]"><li v-for="x in diagnosticPlan.checks" :key="x">{{x}}</li></ol>
-          </div>
-          <div class="mt-3">
-            <div class="text-[10px] font-bold text-slate-500">建議調整順序</div>
-            <ol class="mt-1 list-decimal space-y-1 pl-5 text-[11px]"><li v-for="x in diagnosticPlan.actions" :key="x">{{x}}</li></ol>
-          </div>
-          <div class="mt-3 rounded bg-amber-50 p-2 text-[10px] text-amber-900"><b>調機原則：</b>每次優先只改一個主要變數，記錄調整前後結果；如果根因在模具、排氣或材料狀態，不要只靠機台參數硬補。</div>
-        </div>
-
-        <div class="rounded-lg border bg-white p-3">
-          <div class="text-xs font-bold">本次試模紀錄</div>
-          <textarea class="mt-2 w-full rounded border p-2 text-[11px]" rows="3" v-model="tuning.trialNote" placeholder="例：第一段射速 65→50%，銀紋改善約 70%"></textarea>
-          <div class="mt-2 grid grid-cols-2 gap-2">
-            <label class="text-[10px]">改善結果
-              <select class="mt-1 w-full rounded border bg-white p-2" v-model="tuning.trialResult"><option>未評估</option><option>無改善</option><option>些微改善</option><option>明顯改善</option><option>已解決</option><option>變差</option></select>
-            </label>
-            <button @click="saveTrial" class="self-end rounded-lg bg-violet-600 py-2 text-[10px] font-bold text-white">儲存這次調機紀錄</button>
-          </div>
-          <div v-if="tuningTrials.length" class="mt-3 space-y-2">
-            <div v-for="(trial,i) in tuningTrials" :key="i" class="rounded bg-slate-50 p-2 text-[10px]"><b>{{trial.defect}}｜{{trial.result}}</b><br>{{trial.note}}<br><span class="text-slate-400">{{trial.time}}</span></div>
-          </div>
-        </div>
-      </section>
-
-      <button @click="tab='energy'" class="no-print w-full rounded-xl bg-amber-500 py-3 text-xs font-bold text-white">下一步：節能與 TCO →</button>
-    </section>
-
-    <!-- 04 ENERGY -->
-    <section v-if="tab==='energy'" class="space-y-4">
-      <div class="rounded-2xl bg-gradient-to-br from-amber-700 to-slate-900 p-4 text-white shadow">
-        <div class="text-xs font-bold text-amber-200">04 節能與總擁有成本 TCO</div>
-        <div class="mt-1 text-xl font-black">用實際平均功率、電價與工時比較</div>
-      </div>
-
-      <section class="rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-3">
-        <label class="block text-[11px] font-semibold">數據來源
-          <select class="mt-1 w-full rounded border bg-white p-2" v-model="energy.source">
-            <option value="actual">客戶 / 現場實際量測</option>
-            <option value="omc">OMC 測試資料</option>
-            <option value="estimate">人工估算</option>
-          </select>
+    <div class="card p-4 space-y-3">
+      <label class="block text-xs font-bold">材料
+        <select v-model="a.material" class="mt-1 w-full rounded-xl border p-2">
+          <option>PP</option><option>ABS</option><option>PET</option><option>PC</option><option>PA</option><option>PA+GF</option><option>PBT</option><option>POM</option><option>其他</option>
+        </select>
+      </label>
+      <label class="block text-xs font-bold">材料牌號（不知道可空白）
+        <input v-model="a.grade" class="mt-1 w-full rounded-xl border p-2" placeholder="例如 PET bottle grade / PC 某牌號">
+      </label>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="text-xs font-bold">填充 / 添加物
+          <select v-model="a.fillerType" class="mt-1 w-full rounded-xl border p-2"><option value="none">無 / 不知道</option><option value="GF">玻纖 GF</option><option value="CF">碳纖 CF</option><option value="mineral">礦粉</option><option value="FR">阻燃 FR</option><option value="GF_FR">GF + FR</option></select>
         </label>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-[10px]">舊機平均功率 kW<input class="mt-1 w-full rounded border p-2" type="number" step="0.1" v-model.number="energy.oldKw"></label>
-          <label class="text-[10px]">新機平均功率 kW<input class="mt-1 w-full rounded border p-2" type="number" step="0.1" v-model.number="energy.newKw"></label>
-          <label class="text-[10px]">每度電價 NT$/kWh<input class="mt-1 w-full rounded border p-2" type="number" step="0.01" v-model.number="energy.price"></label>
-          <label class="text-[10px]">設備額外投資 NT$<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="energy.extraCost"></label>
-          <label class="text-[10px]">每日開機 hr<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="energy.hoursPerDay"></label>
-          <label class="text-[10px]">每年開機天數<input class="mt-1 w-full rounded border p-2" type="number" v-model.number="energy.daysPerYear"></label>
-        </div>
-        <div class="rounded bg-white p-2 text-[10px] text-slate-500">請優先使用功率計 / 電表量測的平均功率。銘牌馬達功率不等於實際平均耗電。</div>
-      </section>
-
-      <section v-if="energyAnalysis" class="rounded-xl border p-3">
-        <div class="grid grid-cols-2 gap-2 text-[11px]">
-          <div class="rounded bg-slate-50 p-3">舊機年電費<br><b class="text-base">NT$ {{energyAnalysis.oldAnnualCost.toLocaleString()}}</b></div>
-          <div class="rounded bg-slate-50 p-3">新機年電費<br><b class="text-base">NT$ {{energyAnalysis.newAnnualCost.toLocaleString()}}</b></div>
-          <div class="rounded bg-emerald-50 p-3 text-emerald-800">預估年省<br><b class="text-base">NT$ {{energyAnalysis.annualSaving.toLocaleString()}}</b></div>
-          <div class="rounded bg-amber-50 p-3 text-amber-800">投資回收期<br><b class="text-base">{{energyAnalysis.paybackText}}</b></div>
-          <div class="rounded bg-slate-50 p-3">年減少用電<br><b>{{energyAnalysis.annualKwh.toLocaleString()}} kWh</b></div>
-          <div class="rounded bg-slate-50 p-3">節能比例<br><b>{{energyAnalysis.percentText}}</b></div>
-        </div>
-      </section>
-      <button @click="tab='report'" class="no-print w-full rounded-xl bg-slate-900 py-3 text-xs font-bold text-white">完成 → 產生完整報告</button>
-    </section>
-
-    <!-- 05 REPORT -->
-    <section v-if="tab==='report'" class="space-y-4">
-      <div class="no-print rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 p-4 text-white shadow">
-        <div class="text-xs font-bold text-slate-300">05 完整 OMC 評估報告</div>
-        <div class="mt-1 text-xl font-black">最後一次匯出全部結果</div>
-        <p class="mt-2 text-xs text-slate-300">選機、CAD / 模具、廠房、產能、調機、材料與節能 TCO 全部整合；未完成的項目會標示未完成。</p>
+        <label class="text-xs font-bold">填充比例 %
+          <input v-model.number="a.fillerPct" type="number" class="mt-1 w-full rounded-xl border p-2" placeholder="不知道可留 0">
+        </label>
       </div>
+    </div>
 
-      <section class="no-print rounded-xl border bg-slate-50 p-3">
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-[10px]">客戶公司<input class="mt-1 w-full rounded border p-2" v-model="project.company"></label>
-          <label class="text-[10px]">聯絡人<input class="mt-1 w-full rounded border p-2" v-model="project.contact"></label>
-          <label class="text-[10px]">產品 / 專案名稱<input class="mt-1 w-full rounded border p-2" v-model="project.name"></label>
-          <label class="text-[10px]">業務 / 建檔人<input class="mt-1 w-full rounded border p-2" v-model="project.owner"></label>
-        </div>
-      </section>
-
-      <div ref="report" class="report-sheet rounded-xl border shadow-sm p-5 text-[11px] leading-relaxed">
-        <div class="border-b-2 border-blue-700 pb-3">
-          <div class="text-[10px] font-bold tracking-[.15em] text-blue-700">OMC / OUTSTANDING MACHINERY MFG. CO., LTD.</div>
-          <div class="mt-1 text-2xl font-black text-slate-950">Smart Injection Advisor 完整評估報告</div>
-          <div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-slate-600">
-            <div>客戶：{{project.company||'—'}}</div><div>聯絡人：{{project.contact||'—'}}</div>
-            <div>專案：{{project.name||'—'}}</div><div>建檔人：{{project.owner||'—'}}</div>
-            <div>報告日期：{{reportDate}}</div><div>版本：v2.2</div>
-          </div>
-        </div>
-
-        <section class="avoid-break mt-4">
-          <div class="text-sm font-black text-blue-900">1. 選機 / 模具 / 廠房</div>
-          <div v-if="selectionResult" class="mt-2 space-y-2">
-            <div class="rounded bg-slate-900 p-3 text-white"><div class="text-[10px] text-blue-300">建議機型</div><div class="text-xl font-black">{{selectionResult.machineModel}}</div><div>需求 {{selectionResult.requiredTonnage}}T ｜ 建議 {{selectionResult.selectedTonnage}}T ｜ 射量 {{selectionResult.utilizationText}}</div></div>
-            <div class="rounded border p-3">材料 {{material}} ｜ 投影面積 {{selectionCalc.area}} cm²<span v-if="selectionCalc.areaEstimated">（粗估）</span> ｜ 每模重量 {{selectionCalc.totalWeight?selectionCalc.totalWeight+' g':'未提供'}}<br>模具 {{mold.width}} × {{mold.height}} mm<span v-if="mold.depth"> ｜ 模厚 {{mold.depth}} mm</span><div v-if="selectionResult.moldFitDetail" class="mt-1">模板 / 柱間判定：{{selectionResult.moldFitDetail.reason}}</div></div>
-            <div v-if="cad.name" class="rounded border p-3"><b>CAD：</b>{{cad.name}} ｜ {{cad.status}}<span v-if="cad.ok"> ｜ 推算外框 {{cad.widthMm}} × {{cad.heightMm}} mm（{{cad.unitLabel}}）</span></div>
-            <div class="rounded border p-3">廠房可用 {{factory.length}} × {{factory.width}} × {{factory.height}} mm ｜ {{factorySummary.reportLabel}}<div v-if="bestFootprint">占地參考 OS-{{selectionResult.selectedTonnage}} / {{bestFootprint.unit}}：{{bestFootprint.length}} × {{bestFootprint.width}} × {{bestFootprint.height}} mm</div></div>
-          </div>
-          <div v-else class="mt-2 rounded border border-dashed p-3 text-slate-500">尚未完成選機評估。</div>
-        </section>
-
-        <section class="avoid-break mt-5">
-          <div class="text-sm font-black text-emerald-900">2. Cycle Time / 產能</div>
-          <div v-if="productionMetrics" class="mt-2 grid grid-cols-2 gap-2">
-            <div class="rounded border p-3">Cycle Time<br><b class="text-lg">{{effectiveCycle}} 秒</b><br>{{production.actualCycle>0?'實測':'估算'}}</div>
-            <div class="rounded border p-3">穴數<br><b class="text-lg">{{production.cavities}} 穴</b></div>
-            <div class="rounded border p-3">每小時良品<br><b>{{productionMetrics.goodHourly.toLocaleString()}} pcs</b></div>
-            <div class="rounded border p-3">單機月良品<br><b>{{productionMetrics.monthlyGood.toLocaleString()}} pcs</b></div>
-            <div class="col-span-2 rounded border p-3">稼動率 {{production.uptime}}% ｜ 良率 {{production.yieldRate}}% ｜ 所需設備數：<b>{{productionMetrics.requiredMachinesText}}</b></div>
-          </div>
-          <div v-else class="mt-2 rounded border border-dashed p-3 text-slate-500">尚未完成產能分析。</div>
-        </section>
-
-        <section class="avoid-break mt-5">
-          <div class="text-sm font-black text-violet-900">3. 現場調機 / 材料 / 缺陷</div>
-          <div class="mt-2 rounded border p-3">
-            <b>材料：</b>{{material}}<span v-if="tuning.grade"> ｜ 牌號 {{tuning.grade}}</span><br>
-            乾燥快查：{{materialQuick.drying}} ｜ 設備：{{materialQuick.dryer}}<br>
-            實際：乾燥 {{tuning.dryingTemp||'—'}}°C / {{tuning.dryingHours||'—'}}hr ｜ 熔膠 {{tuning.meltTemp||'—'}}°C ｜ 模溫 {{tuning.moldTemp||'—'}}°C
-          </div>
-          <div v-if="meteringCalc" class="mt-2 rounded border p-3">螺桿 Ø{{tuning.screwDiameter}} ｜ 計量行程 {{tuning.meteringStroke}} mm ｜ 效率 {{tuning.meteringEfficiency}}% ｜ 有效熔膠 {{meteringCalc.volume}} cm³ / {{meteringCalc.weight}} g ｜ {{tuning.screwRpm||0}} rpm → 周速 {{meteringCalc.peripheralSpeed}} m/s</div>
-          <div class="mt-2 rounded border p-3"><b>{{diagnosticPlan.title}}</b> ｜ 可信度 {{diagnosticPlan.confidence}}<br><br><b>先檢查：</b><ol class="list-decimal pl-5"><li v-for="x in diagnosticPlan.checks" :key="x">{{x}}</li></ol><br><b>建議調整：</b><ol class="list-decimal pl-5"><li v-for="x in diagnosticPlan.actions" :key="x">{{x}}</li></ol></div>
-          <div v-if="tuningTrials.length" class="mt-2 rounded border p-3"><b>試模紀錄：</b><div v-for="(trial,i) in tuningTrials" :key="i" class="mt-1">{{i+1}}. {{trial.defect}}｜{{trial.result}}｜{{trial.note}}</div></div>
-        </section>
-
-        <section class="avoid-break mt-5">
-          <div class="text-sm font-black text-amber-800">4. 節能 / TCO</div>
-          <div v-if="energyAnalysis" class="mt-2 grid grid-cols-2 gap-2">
-            <div class="rounded border p-3">舊機年電費<br><b>NT$ {{energyAnalysis.oldAnnualCost.toLocaleString()}}</b></div>
-            <div class="rounded border p-3">新機年電費<br><b>NT$ {{energyAnalysis.newAnnualCost.toLocaleString()}}</b></div>
-            <div class="rounded border p-3">預估年省<br><b>NT$ {{energyAnalysis.annualSaving.toLocaleString()}}</b></div>
-            <div class="rounded border p-3">回收期<br><b>{{energyAnalysis.paybackText}}</b></div>
-            <div class="col-span-2 rounded border p-3">來源：{{energySourceLabel}} ｜ 年減少用電 {{energyAnalysis.annualKwh.toLocaleString()}} kWh ｜ 節能比例 {{energyAnalysis.percentText}}</div>
-          </div>
-          <div v-else class="mt-2 rounded border border-dashed p-3 text-slate-500">尚未完成節能分析。</div>
-        </section>
-
-        <section class="avoid-break mt-5 border-t pt-3">
-          <div class="text-sm font-black">5. OMC 綜合提醒</div>
-          <ul class="mt-2 list-disc pl-5 text-slate-600"><li v-for="x in advisorMessages" :key="x">{{x}}</li></ul>
-        </section>
-
-        <div class="mt-6 border-t pt-3 text-[9px] text-slate-500">本報告為前期評估與現場調機輔助，不構成最終機台、模具或材料工藝保證。正式報價、下單與量產前，需依 OMC 官方規格、原料供應商 TDS、模具圖面、實機數據與實際試模再次確認。調機建議應一次優先改一個主要變數並記錄結果。</div>
+    <div class="card p-4">
+      <div class="text-xs font-bold">產品要求比較接近哪一種？</div>
+      <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <button v-for="x in precisionOptions" :key="x.v" @click="a.precision=x.v" class="qbtn !p-3 text-center text-xs" :class="{on:a.precision===x.v}">{{x.t}}</button>
       </div>
+      <label class="mt-3 block text-xs font-bold">單模重量允許變動（不知道可跳過）
+        <select v-model="a.weightTolerance" class="mt-1 w-full rounded-xl border p-2"><option value="">不知道</option><option value="2">±2%</option><option value="1">±1%</option><option value="0.5">±0.5%</option></select>
+      </label>
+    </div>
 
-      <div class="no-print grid grid-cols-2 gap-2">
-        <button @click="exportPdf" :disabled="pdfBusy" class="rounded-xl bg-blue-600 py-3 text-xs font-black text-white disabled:opacity-50">{{pdfBusy?'正在產生 PDF…':'⬇ 匯出完整 PDF 報告'}}</button>
-        <button @click="windowPrint" class="rounded-xl border bg-white py-3 text-xs font-bold">列印 / 系統另存 PDF</button>
+    <div class="flex gap-2"><button @click="step=1" class="w-1/3 rounded-xl border py-3 text-xs font-bold">← 上一步</button><button @click="step=3" class="w-2/3 rounded-xl bg-blue-600 py-3 text-xs font-black text-white">下一步：產品與產量 →</button></div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section v-if="step===3" class="space-y-4">
+    <div><div class="text-xs font-bold text-blue-700">第 3 步</div><h2 class="text-xl font-black">客戶最核心的產品資料</h2></div>
+
+    <div class="card p-4 space-y-3">
+      <div class="grid grid-cols-2 gap-2">
+        <label class="text-xs font-bold">單件重量 g<input v-model.number="a.partWeight" type="number" step="0.01" class="mt-1 w-full rounded-xl border p-2"></label>
+        <label class="text-xs font-bold">穴數
+          <select v-model="a.cavitiesKnown" class="mt-1 w-full rounded-xl border p-2"><option :value="true">知道</option><option :value="false">不知道</option></select>
+        </label>
       </div>
-    </section>
-  </main>
+      <label v-if="a.cavitiesKnown" class="block text-xs font-bold">模具穴數<input v-model.number="a.cavities" type="number" min="1" class="mt-1 w-full rounded-xl border p-2"></label>
+      <div v-else class="rounded-xl bg-blue-50 p-3">
+        <div class="text-[11px] font-bold text-blue-900">不知道穴數沒關係，系統可依需求反推最低穴數</div>
+        <div class="mt-2 grid grid-cols-2 gap-2">
+          <label class="text-[10px]">月需求 pcs<input v-model.number="a.monthlyDemand" type="number" class="mt-1 w-full rounded border p-2"></label>
+          <label class="text-[10px]">目標 Cycle 秒<input v-model.number="a.cycle" type="number" step="0.1" class="mt-1 w-full rounded border p-2"></label>
+          <label class="text-[10px]">每日工時<input v-model.number="a.hoursDay" type="number" class="mt-1 w-full rounded border p-2"></label>
+          <label class="text-[10px]">每月工作日<input v-model.number="a.daysMonth" type="number" class="mt-1 w-full rounded border p-2"></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-4 space-y-3">
+      <div class="text-xs font-black">產品最大投影尺寸</div>
+      <p class="text-[10px] text-slate-500">沒有 CAD 時，只要大概輸入產品從鎖模方向看到的最大長 × 寬；例如管件可用外徑 × 長度先估。</p>
+      <div class="grid grid-cols-3 gap-2">
+        <label class="text-[10px]">投影長 mm<input v-model.number="a.projL" type="number" class="mt-1 w-full rounded border p-2"></label>
+        <label class="text-[10px]">投影寬 mm<input v-model.number="a.projW" type="number" class="mt-1 w-full rounded border p-2"></label>
+        <label class="text-[10px]">最薄肉厚 mm<input v-model.number="a.wall" type="number" step="0.1" class="mt-1 w-full rounded border p-2"></label>
+      </div>
+      <div v-if="path==='engineering'" class="border-t pt-3">
+        <label class="block text-xs font-bold">如果已有「總投影面積」可直接輸入 cm²
+          <input v-model.number="a.exactArea" type="number" class="mt-1 w-full rounded-xl border p-2" placeholder="有就優先使用，沒有可留空">
+        </label>
+      </div>
+    </div>
+
+    <div class="card p-4 space-y-3">
+      <div class="grid grid-cols-2 gap-2">
+        <label class="text-xs font-bold">澆道
+          <select v-model="a.runnerType" class="mt-1 w-full rounded-xl border p-2"><option value="hot">熱澆道</option><option value="cold">冷澆道</option><option value="unknown">不知道</option></select>
+        </label>
+        <label class="text-xs font-bold">水口重量 g<input v-model.number="a.runnerWeight" type="number" step="0.1" class="mt-1 w-full rounded-xl border p-2" placeholder="熱澆道可 0"></label>
+        <label class="text-xs font-bold">Cycle Time 秒<input v-model.number="a.cycle" type="number" step="0.1" class="mt-1 w-full rounded-xl border p-2" placeholder="不知道可留空"></label>
+        <label class="text-xs font-bold">現有最高射壓（可選）<input v-model.number="a.knownPressure" type="number" class="mt-1 w-full rounded-xl border p-2" placeholder="有實測才填"></label>
+      </div>
+    </div>
+
+    <div class="flex gap-2"><button @click="step=2" class="w-1/3 rounded-xl border py-3 text-xs font-bold">← 上一步</button><button @click="step=4" class="w-2/3 rounded-xl bg-blue-600 py-3 text-xs font-black text-white">下一步：模具 / 現場 →</button></div>
+  </section>
+
+  <!-- STEP 4 -->
+  <section v-if="step===4" class="space-y-4">
+    <div><div class="text-xs font-bold text-blue-700">第 4 步</div><h2 class="text-xl font-black">{{path==='engineering'?'模具 / CAD 工程資料':'有模具資料就補，沒有也能繼續'}}</h2></div>
+
+    <div v-if="path==='engineering'" class="card border-violet-200 bg-violet-50/40 p-4">
+      <div class="text-xs font-black text-violet-950">上傳 2D CAD</div>
+      <input type="file" accept=".dxf,.dwg,.pdf,.png,.jpg,.jpeg" @change="handleCadUpload" class="mt-2 block w-full text-[10px]">
+      <p class="mt-2 text-[10px] text-slate-500">目前 ASCII DXF 可自動抓圖面外框做初判；DWG / PDF / 照片先記錄檔名，避免未可靠辨識就自動填數字。</p>
+      <div v-if="cad.name" class="mt-2 rounded-xl bg-white p-3 text-[10px]"><b>{{cad.name}}</b><br>{{cad.status}}<div v-if="cad.ok" class="mt-1 text-sm font-black">{{cad.widthMm}} × {{cad.heightMm}} mm</div><button v-if="cad.ok" @click="applyCad" class="mt-2 rounded bg-violet-600 px-3 py-2 font-bold text-white">確認並套用模具尺寸</button></div>
+    </div>
+
+    <div class="card p-4 space-y-3">
+      <label class="flex items-center justify-between text-xs font-bold">我知道模具外形尺寸
+        <input type="checkbox" v-model="a.hasMold">
+      </label>
+      <div v-if="a.hasMold" class="grid grid-cols-2 gap-2">
+        <label class="text-[10px]">模具寬 mm<input v-model.number="a.moldW" type="number" class="mt-1 w-full rounded border p-2"></label>
+        <label class="text-[10px]">模具高 mm<input v-model.number="a.moldH" type="number" class="mt-1 w-full rounded border p-2"></label>
+        <label class="text-[10px]">模厚 mm<input v-model.number="a.moldD" type="number" class="mt-1 w-full rounded border p-2" placeholder="不知道可空白"></label>
+        <label class="text-[10px]">模重 kg<input v-model.number="a.moldKg" type="number" class="mt-1 w-full rounded border p-2" placeholder="不知道可空白"></label>
+        <label class="text-[10px]">需求開模距離 mm<input v-model.number="a.opening" type="number" class="mt-1 w-full rounded border p-2" placeholder="可空白"></label>
+        <label class="text-[10px]">頂出行程 mm<input v-model.number="a.eject" type="number" class="mt-1 w-full rounded border p-2" placeholder="可空白"></label>
+      </div>
+    </div>
+
+    <div class="card p-4">
+      <div class="text-xs font-black">廠房空間（選填）</div>
+      <div class="mt-2 grid grid-cols-3 gap-2">
+        <label class="text-[10px]">可用長 mm<input v-model.number="a.factoryL" type="number" class="mt-1 w-full rounded border p-2"></label>
+        <label class="text-[10px]">可用寬 mm<input v-model.number="a.factoryW" type="number" class="mt-1 w-full rounded border p-2"></label>
+        <label class="text-[10px]">可用高 mm<input v-model.number="a.factoryH" type="number" class="mt-1 w-full rounded border p-2"></label>
+      </div>
+    </div>
+
+    <div class="flex gap-2"><button @click="step=3" class="w-1/3 rounded-xl border py-3 text-xs font-bold">← 上一步</button><button @click="runAdvisor" class="w-2/3 rounded-xl bg-blue-600 py-3 text-sm font-black text-white">⚡ 產生 OMC AI 選型答案</button></div>
+  </section>
+
+  <!-- STEP 5 RESULTS -->
+  <section v-if="step===5 && result" class="space-y-4">
+    <div class="rounded-2xl bg-gradient-to-r from-slate-950 to-blue-950 p-5 text-white">
+      <div class="flex items-start justify-between gap-3">
+        <div><div class="text-[10px] font-bold tracking-wider text-blue-300">OMC AI MACHINE SELECTION</div><div class="mt-1 text-3xl font-black">{{result.machineModel}}</div><div class="mt-1 text-xs text-slate-300">建議機台級距 {{result.machine.tonnage}}T ｜ {{path==='quick'?'快速 AI 選型':'工程精準選型'}}</div></div>
+        <div class="rounded-xl bg-white/10 p-3 text-center"><div class="text-[9px] text-slate-300">資料可信度</div><div class="text-xl font-black">{{result.confidence}}%</div></div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div class="card p-3"><div class="text-[9px] text-slate-500">每模總重量</div><div class="text-lg font-black">{{result.shotWeight}} g</div><div class="text-[9px] text-slate-400">{{result.runnerStatus}}</div></div>
+      <div class="card p-3"><div class="text-[9px] text-slate-500">熔膠體積</div><div class="text-lg font-black">{{result.shotVolume}} cm³</div></div>
+      <div class="card p-3"><div class="text-[9px] text-slate-500">總投影面積</div><div class="text-lg font-black">{{result.area}} cm²</div><div class="text-[9px] text-slate-400">{{result.areaSource}}</div></div>
+      <div class="card p-3"><div class="text-[9px] text-slate-500">需求鎖模力</div><div class="text-lg font-black">{{result.requiredTonnage}} T</div></div>
+    </div>
+
+    <div class="card p-4">
+      <div class="flex items-center justify-between"><div class="text-sm font-black">① 機台規格，一眼看懂</div><span class="badge bg-blue-100 text-blue-700">目前可用資料</span></div>
+      <div class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[11px] sm:grid-cols-3">
+        <div><span class="text-slate-500">建議級距</span><br><b>OS-{{result.machine.tonnage}}</b></div>
+        <div><span class="text-slate-500">柱間淨距</span><br><b>{{result.machine.tieBar}} × {{result.machine.tieBar}} mm</b></div>
+        <div><span class="text-slate-500">可搭射座</span><br><b>{{result.units}}</b></div>
+        <div><span class="text-slate-500">機台寬</span><br><b>{{result.machine.width}} mm</b></div>
+        <div><span class="text-slate-500">機台高</span><br><b>{{result.machine.height}} mm</b></div>
+        <div><span class="text-slate-500">長度範圍</span><br><b>{{result.lengthRange}}</b></div>
+      </div>
+      <div class="mt-3 rounded-xl p-3 text-[10px]" :class="result.moldFit.level==='ok'?'bg-green-50 text-green-800':(result.moldFit.level==='warn'?'bg-amber-50 text-amber-900':'bg-slate-50 text-slate-600')"><b>模具安裝：</b>{{result.moldFit.text}}</div>
+      <div class="mt-2 rounded-xl bg-slate-50 p-3 text-[10px] text-slate-600"><b>尚待 OMC 官方資料庫補齊：</b>模板尺寸、最小 / 最大模厚、最大開距、頂出行程、各射座各螺桿的最高射壓 / 射出率 / 塑化量。缺這些資料時系統不會假裝已完成工程確認。</div>
+    </div>
+
+    <div class="card border-cyan-200 p-4">
+      <div class="flex items-center justify-between"><div class="text-sm font-black">② 射出單元 / 螺桿需求</div><span class="badge bg-cyan-100 text-cyan-700">AI 規格窗口</span></div>
+      <p class="mt-1 text-[10px] text-slate-500">現在先算出「這個產品需要什麼條件」，等 OMC 各射座螺桿規格表放進後台，就能自動變成 Ø40 / Ø46 / Ø52 等正式推薦。</p>
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <div class="rounded-xl bg-cyan-50 p-3"><div class="text-[9px] text-cyan-700">建議料管可用射量窗口</div><div class="text-base font-black">{{result.screw.capacityMin}}–{{result.screw.capacityMax}} cm³</div><div class="text-[9px]">以 Shot 約 30–70% 作優先篩選窗口</div></div>
+        <div class="rounded-xl bg-cyan-50 p-3"><div class="text-[9px] text-cyan-700">最低塑化需求</div><div class="text-base font-black">{{result.screw.plasticizing}}</div><div class="text-[9px]">依目前 Cycle / Shot 計算</div></div>
+        <div class="rounded-xl bg-cyan-50 p-3"><div class="text-[9px] text-cyan-700">射壓需求方向</div><div class="text-base font-black">{{result.screw.pressureClass}}</div><div class="text-[9px]">{{result.screw.pressureReason}}</div></div>
+        <div class="rounded-xl bg-cyan-50 p-3"><div class="text-[9px] text-cyan-700">正式螺桿直徑</div><div class="text-base font-black">{{result.screw.diameterAnswer}}</div><div class="text-[9px]">等待 OMC 射座 / 螺桿表自動配對</div></div>
+      </div>
+    </div>
+
+    <div class="card border-violet-200 p-4">
+      <div class="text-sm font-black">③ 螺桿、止逆環、雙合金方向</div>
+      <div class="mt-3 space-y-2 text-[11px]">
+        <div class="rounded-xl bg-violet-50 p-3"><b>L/D / 螺槽：</b>{{result.screw.ld}}<br><span class="text-[10px] text-slate-500">{{result.screw.ldReason}}</span></div>
+        <div class="rounded-xl bg-violet-50 p-3"><b>止逆環：</b>{{result.screw.checkRing}}<br><span class="text-[10px] text-slate-500">{{result.screw.checkReason}}</span></div>
+        <div class="rounded-xl bg-violet-50 p-3"><b>螺桿 / 料管材質：</b>{{result.screw.barrel}}<br><span class="text-[10px] text-slate-500">{{result.screw.barrelReason}}</span></div>
+      </div>
+    </div>
+
+    <div class="card p-4">
+      <div class="text-sm font-black">④ 系統怎麼得出答案</div>
+      <div class="mt-2 space-y-2">
+        <div v-for="x in result.explain" :key="x.title" class="flex gap-3 rounded-xl bg-slate-50 p-3 text-[10px]"><div class="font-black text-blue-700">{{x.n}}</div><div><b>{{x.title}}</b><br><span class="text-slate-500">{{x.text}}</span></div></div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2 no-print"><button @click="step=1;result=null" class="rounded-xl border py-3 text-xs font-bold">重新選型</button><button @click="tab='report'" class="rounded-xl bg-slate-900 py-3 text-xs font-black text-white">看完整報告 →</button></div>
+  </section>
+</section>
+
+<!-- TUNING -->
+<section v-if="tab==='tuning'" class="space-y-4">
+  <div class="rounded-2xl bg-gradient-to-br from-violet-950 to-slate-900 p-5 text-white"><div class="text-xs font-bold text-violet-300">現場調機助手</div><div class="mt-1 text-xl font-black">先找根因，再給調整方向</div><p class="mt-2 text-xs text-slate-300">不把所有缺陷都回答成「加溫、加壓」。每次優先只改一個主要變數。</p></div>
+  <div class="card p-4 space-y-3">
+    <label class="block text-xs font-bold">目前缺陷
+      <select v-model="tuning.defect" class="mt-1 w-full rounded-xl border p-2"><option value="sink">縮水 / 凹痕</option><option value="flash">毛邊</option><option value="short">短射</option><option value="weld">結合線</option><option value="splay">銀紋</option><option value="burn">燒焦</option><option value="void">氣泡 / Void</option><option value="warp">翹曲</option><option value="jetting">噴射紋</option><option value="black">黑點 / 劣化</option></select>
+    </label>
+    <div class="rounded-xl bg-violet-50 p-4"><div class="text-base font-black">{{diagnostic.title}}</div><div class="mt-3 text-[10px] font-bold text-slate-500">先檢查</div><ol class="mt-1 list-decimal space-y-1 pl-5 text-[11px]"><li v-for="x in diagnostic.checks" :key="x">{{x}}</li></ol><div class="mt-3 text-[10px] font-bold text-slate-500">調整順序</div><ol class="mt-1 list-decimal space-y-1 pl-5 text-[11px]"><li v-for="x in diagnostic.actions" :key="x">{{x}}</li></ol></div>
+    <label class="block text-xs font-bold">試模紀錄<textarea v-model="tuning.note" rows="3" class="mt-1 w-full rounded-xl border p-2" placeholder="例如：第一段射速 65→50%，銀紋明顯改善"></textarea></label>
+    <button @click="saveTrial" class="w-full rounded-xl bg-violet-600 py-3 text-xs font-black text-white">儲存本次紀錄</button>
+  </div>
+</section>
+
+<!-- TCO -->
+<section v-if="tab==='tco'" class="space-y-4">
+  <div class="rounded-2xl bg-gradient-to-br from-amber-700 to-slate-900 p-5 text-white"><div class="text-xs font-bold text-amber-200">節能與 TCO</div><div class="mt-1 text-xl font-black">用實際平均功率算，不用銘牌功率猜</div></div>
+  <div class="card p-4">
+    <div class="grid grid-cols-2 gap-2">
+      <label class="text-[10px]">舊機平均 kW<input v-model.number="energy.oldKw" type="number" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">OMC 平均 kW<input v-model.number="energy.newKw" type="number" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">電價 NT$/kWh<input v-model.number="energy.price" type="number" step="0.01" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">額外投資 NT$<input v-model.number="energy.extra" type="number" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">每天 hr<input v-model.number="energy.hours" type="number" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">每年天數<input v-model.number="energy.days" type="number" class="mt-1 w-full rounded border p-2"></label>
+    </div>
+  </div>
+  <div v-if="tco" class="grid grid-cols-2 gap-2">
+    <div class="card p-4">舊機年電費<br><b class="text-lg">NT$ {{tco.oldCost.toLocaleString()}}</b></div>
+    <div class="card p-4">OMC 年電費<br><b class="text-lg">NT$ {{tco.newCost.toLocaleString()}}</b></div>
+    <div class="card bg-emerald-50 p-4 text-emerald-800">預估年省<br><b class="text-lg">NT$ {{tco.saving.toLocaleString()}}</b></div>
+    <div class="card bg-amber-50 p-4 text-amber-800">回收期<br><b class="text-lg">{{tco.payback}}</b></div>
+  </div>
+</section>
+
+<!-- REPORT -->
+<section v-if="tab==='report'" class="space-y-4">
+  <div class="no-print rounded-2xl bg-slate-900 p-5 text-white"><div class="text-xs font-bold text-slate-300">完整 OMC 報告</div><div class="mt-1 text-xl font-black">一次輸出客戶看得懂、工程也能追資料的報告</div></div>
+  <div class="no-print card p-4 grid grid-cols-2 gap-2">
+    <label class="text-[10px]">客戶公司<input v-model="project.company" class="mt-1 w-full rounded border p-2"></label>
+    <label class="text-[10px]">聯絡人<input v-model="project.contact" class="mt-1 w-full rounded border p-2"></label>
+    <label class="text-[10px]">專案 / 產品<input v-model="project.name" class="mt-1 w-full rounded border p-2"></label>
+    <label class="text-[10px]">OMC 業務<input v-model="project.owner" class="mt-1 w-full rounded border p-2"></label>
+  </div>
+
+  <div ref="report" class="report-sheet card p-6 text-[11px] leading-relaxed">
+    <div class="border-b-2 border-blue-700 pb-3"><div class="text-[9px] font-bold tracking-[.18em] text-blue-700">OMC / OUTSTANDING MACHINERY MFG. CO., LTD.</div><div class="text-2xl font-black">Smart Injection Advisor 完整評估報告</div><div class="mt-2 grid grid-cols-2 gap-1 text-slate-600"><div>客戶：{{project.company||'—'}}</div><div>聯絡人：{{project.contact||'—'}}</div><div>產品：{{project.name||'—'}}</div><div>業務：{{project.owner||'—'}}</div><div>日期：{{reportDate}}</div><div>版本：v3.0</div></div></div>
+
+    <section class="avoid-break mt-4"><div class="text-sm font-black text-blue-900">1. 客戶核心資料</div><div class="mt-2 rounded border p-3">選型方式：{{path==='engineering'?'工程精準選型':'快速 AI 選型'}}<br>材料：{{a.material}} <span v-if="a.grade">/ {{a.grade}}</span> ｜ 單件 {{a.partWeight||'—'}} g ｜ 穴數 {{resolvedCavities||'—'}} ｜ Cycle {{a.cycle||'—'}} s<br>產品投影：{{a.projL||'—'}} × {{a.projW||'—'}} mm ｜ 最薄肉厚 {{a.wall||'—'}} mm ｜ 精度：{{precisionLabel}}</div></section>
+
+    <section class="avoid-break mt-4"><div class="text-sm font-black text-blue-900">2. OMC 機台選型</div><div v-if="result" class="mt-2 space-y-2"><div class="rounded bg-slate-900 p-3 text-white"><div class="text-xl font-black">{{result.machineModel}}</div><div>需求鎖模力 {{result.requiredTonnage}}T ｜ 建議 {{result.machine.tonnage}}T ｜ 可信度 {{result.confidence}}%</div></div><div class="rounded border p-3">柱間：{{result.machine.tieBar}} × {{result.machine.tieBar}} mm ｜ 射座：{{result.units}}<br>機台寬 {{result.machine.width}} mm ｜ 高 {{result.machine.height}} mm ｜ 長度 {{result.lengthRange}}<br>{{result.moldFit.text}}</div></div><div v-else class="mt-2 rounded border border-dashed p-3 text-slate-500">尚未完成 AI 選型。</div></section>
+
+    <section class="avoid-break mt-4"><div class="text-sm font-black text-cyan-900">3. 射出單元 / 螺桿需求</div><div v-if="result" class="mt-2 rounded border p-3">Shot：{{result.shotWeight}} g / {{result.shotVolume}} cm³<br>建議料管可用射量窗口：{{result.screw.capacityMin}}–{{result.screw.capacityMax}} cm³<br>最低塑化需求：{{result.screw.plasticizing}} ｜ 射壓方向：{{result.screw.pressureClass}}<br>L/D / 螺槽：{{result.screw.ld}}<br>止逆環：{{result.screw.checkRing}}<br>螺桿 / 料管：{{result.screw.barrel}}<br><b>正式螺桿直徑：</b>{{result.screw.diameterAnswer}}</div><div v-else class="mt-2 rounded border border-dashed p-3 text-slate-500">尚未完成。</div></section>
+
+    <section class="avoid-break mt-4"><div class="text-sm font-black text-violet-900">4. 調機紀錄</div><div class="mt-2 rounded border p-3"><b>{{diagnostic.title}}</b><div v-if="trials.length" class="mt-2"><div v-for="(x,i) in trials" :key="i">{{i+1}}. {{x.time}}｜{{x.defect}}｜{{x.note}}</div></div><div v-else class="text-slate-500">尚無試模紀錄。</div></div></section>
+
+    <section class="avoid-break mt-4"><div class="text-sm font-black text-amber-800">5. 節能 TCO</div><div v-if="tco" class="mt-2 rounded border p-3">舊機年電費 NT$ {{tco.oldCost.toLocaleString()}} ｜ OMC NT$ {{tco.newCost.toLocaleString()}}<br>預估年省 NT$ {{tco.saving.toLocaleString()}} ｜ 回收期 {{tco.payback}}</div><div v-else class="mt-2 rounded border border-dashed p-3 text-slate-500">尚未輸入功率與電價。</div></section>
+
+    <section class="avoid-break mt-4 border-t pt-3"><div class="text-sm font-black">資料狀態 / 待確認</div><ul class="mt-2 list-disc pl-5 text-slate-600"><li v-for="x in reportWarnings" :key="x">{{x}}</li></ul></section>
+    <div class="mt-5 border-t pt-3 text-[9px] text-slate-500">本工具為前期選型、調機與成本評估。正式報價 / 下單前，需依 OMC 官方機台與射出單元規格、原料供應商 TDS、模具圖面與實際試模再次確認。估算值不取代正式工程審核。</div>
+  </div>
+  <div class="no-print grid grid-cols-2 gap-2"><button @click="exportPdf" class="rounded-xl bg-blue-600 py-3 text-xs font-black text-white">⬇ 匯出完整 PDF</button><button @click="window.print()" class="rounded-xl border py-3 text-xs font-bold">列印 / 系統另存 PDF</button></div>
+</section>
+
+</main>
 </div>
 
 <script>
-const { createApp } = Vue;
+const {createApp}=Vue;
 
 const MACHINE_DB=[
- {tonnage:50,tieBar:310,platen:470,capacity:130,baseL:1619,width:1100,d1:462,height:1505,h1:1192,units:[{unit:'i05',length:3376},{unit:'i08',length:3715}]},
- {tonnage:80,tieBar:360,platen:540,capacity:181,baseL:1847,width:1164,d1:497,height:1578,h1:1227,units:[{unit:'i05',length:3972},{unit:'i08',length:3943},{unit:'i11',length:4087}]},
- {tonnage:110,tieBar:410,platen:615,capacity:266,baseL:2107,width:1240,d1:535,height:1651,h1:1265,units:[{unit:'i08',length:4285},{unit:'i11',length:4347},{unit:'i14',length:4589}]},
- {tonnage:140,tieBar:460,platen:690,capacity:391,baseL:2395,width:1395,d1:592,height:1726,h1:1310,units:[{unit:'i11',length:4876},{unit:'i14',length:4877},{unit:'i18',length:5116}]},
- {tonnage:180,tieBar:510,platen:760,capacity:549,baseL:2626,width:1465,d1:627,height:1796,h1:1345,units:[{unit:'i14',length:5242},{unit:'i18',length:5347},{unit:'i25',length:5642}]},
- {tonnage:250,tieBar:580,platen:866,capacity:770,baseL:2949,width:1575,d1:687,height:1815,h1:1312,units:[{unit:'i18',length:5575},{unit:'i25',length:5960},{unit:'i32',length:6292}]},
- {tonnage:320,tieBar:660,platen:980,capacity:1149,baseL:3333,width:1619,d1:748,height:1910,h1:1420,units:[{unit:'i25',length:6466},{unit:'i32',length:6676},{unit:'i42',length:6960}]},
- {tonnage:420,tieBar:760,platen:1130,capacity:1702,baseL:3838,width:1783,d1:830,height:2050,h1:1486,units:[{unit:'i32',length:7261},{unit:'i42',length:7465},{unit:'i55',length:7998}]},
- {tonnage:550,tieBar:860,platen:1290,capacity:2400,baseL:4285,width:1963,d1:920,height:2222,h1:1578,units:[{unit:'i42',length:7912},{unit:'i55',length:8445}]}
+ {tonnage:50,tieBar:310,width:1100,height:1505,units:[{unit:'i05',length:3376},{unit:'i08',length:3715}]},
+ {tonnage:80,tieBar:360,width:1164,height:1578,units:[{unit:'i05',length:3972},{unit:'i08',length:3943},{unit:'i11',length:4087}]},
+ {tonnage:110,tieBar:410,width:1240,height:1651,units:[{unit:'i08',length:4285},{unit:'i11',length:4347},{unit:'i14',length:4589}]},
+ {tonnage:140,tieBar:460,width:1395,height:1726,units:[{unit:'i11',length:4876},{unit:'i14',length:4877},{unit:'i18',length:5116}]},
+ {tonnage:180,tieBar:510,width:1465,height:1796,units:[{unit:'i14',length:5242},{unit:'i18',length:5347},{unit:'i25',length:5642}]},
+ {tonnage:250,tieBar:580,width:1575,height:1815,units:[{unit:'i18',length:5575},{unit:'i25',length:5960},{unit:'i32',length:6292}]},
+ {tonnage:320,tieBar:660,width:1619,height:1910,units:[{unit:'i25',length:6466},{unit:'i32',length:6676},{unit:'i42',length:6960}]},
+ {tonnage:420,tieBar:760,width:1783,height:2050,units:[{unit:'i32',length:7261},{unit:'i42',length:7465},{unit:'i55',length:7998}]},
+ {tonnage:550,tieBar:860,width:1963,height:2222,units:[{unit:'i42',length:7912},{unit:'i55',length:8445}]}
 ];
-
-const PROCESS_DB={
- PP:{density:.91,absorption:'低吸濕',drying:'通常不需預乾；若有表面水氣 / 儲存異常依原料 TDS',dryer:'一般料斗 / 依 TDS',melt:'依牌號 TDS',moldTemp:'依產品與牌號 TDS',note:'PP 牌號差異很大，快查只做方向提醒，不用固定溫度取代供應商資料。'},
- ABS:{density:1.05,absorption:'需注意含水',drying:'常見初始參考約 80°C、2–4 hr；以牌號 TDS 為準',dryer:'熱風 / 除濕乾燥依牌號',melt:'依牌號 TDS',moldTemp:'依牌號與表面需求',note:'ABS 若出現銀紋 / 水氣紋，優先確認原料乾燥與污染，再調射速 / 熔膠條件。'},
- PET:{density:1.38,absorption:'高吸濕',drying:'常見初始參考約 160°C、4–6 hr；瓶級 / 共聚酯須依牌號 TDS',dryer:'建議除濕乾燥',melt:'依 PET 牌號 / IV / 應用 TDS',moldTemp:'依產品與結晶需求',note:'PET 對水分敏感。乾燥溫度、時間與目標含水率必須依實際牌號與供應商資料確認。'},
- PC:{density:1.20,absorption:'吸濕',drying:'常見牌號約 120°C、2–4 hr；以牌號 TDS 為準',dryer:'除濕乾燥',melt:'常見約 280–320°C，依牌號',moldTemp:'常見約 80–120°C，依牌號',note:'部分 Covestro PC 牌號資料提供螺桿周速約 0.05–0.2 m/s、比背壓約 50–150 bar；不同牌號可能不同，不能直接視為所有 PC 固定值。'},
- PA_GF:{density:1.35,absorption:'高吸濕',drying:'依 PA6 / PA66、GF 比例與牌號 TDS；通常需除濕乾燥',dryer:'除濕乾燥',melt:'依 PA 基材與 GF 牌號',moldTemp:'依尺寸 / 外觀 / 結晶需求',note:'PA+GF 的含水、纖維比例與牌號差異會明顯影響黏度、外觀與尺寸，請以供應商 TDS 為主。'}
+const MATERIAL={
+ PP:{density:.91,clamp:.35,pressure:'一般',ld:'20:1級平衡 / 偏深溝方向',ldReason:'PP 流動性通常較好，重點放在穩定塑化與產能；最終依 OMC 螺桿幾何。'},
+ ABS:{density:1.05,clamp:.45,pressure:'中等',ld:'20:1級平衡 / 偏深溝方向',ldReason:'兼顧熔融均勻與避免過度剪切；實際依牌號。'},
+ PET:{density:1.38,clamp:.65,pressure:'中高',ld:'約20:1級、低剪切 / 中溝方向',ldReason:'PET 對乾燥、熱歷史與剪切敏感，避免只用更長 L/D 解決塑化。'},
+ PC:{density:1.20,clamp:.65,pressure:'高',ld:'約20:1級、低剪切 / 深溝方向',ldReason:'PC 黏度高，需兼顧射壓、均勻熔融與避免過度剪切。'},
+ PA:{density:1.14,clamp:.55,pressure:'中高',ld:'20:1級平衡型',ldReason:'依 PA6 / PA66 與牌號調整；含水與剪切條件很重要。'},
+ 'PA+GF':{density:1.35,clamp:.70,pressure:'中高',ld:'20:1級、耐磨 / 偏淺溝方向',ldReason:'玻纖材料要同時考慮纖維保留、磨耗與剪切。'},
+ PBT:{density:1.31,clamp:.60,pressure:'中高',ld:'20:1級平衡 / 低滯留方向',ldReason:'依填充與阻燃條件調整耐磨耐蝕。'},
+ POM:{density:1.41,clamp:.55,pressure:'中等',ld:'20:1級低滯留方向',ldReason:'需避免不必要的高溫與長時間滯留。'},
+ 其他:{density:1.0,clamp:.55,pressure:'待材料確認',ld:'待材料牌號確認',ldReason:'需先取得材料 TDS 或至少確認樹脂種類。'}
 };
-
-const DEFECT_DB={
- sink:{title:'縮水 / 凹痕',checks:['先確認不是短射或局部充填不足。','確認保壓是否有效到澆口封口，檢查保壓壓力與保壓時間。','檢查肉厚、肋位 / 柱位與局部熱點，以及冷卻是否均勻。'],actions:['先做 gate freeze / 保壓時間確認，再逐步增加合理保壓。','若澆口過早封口，評估提高合理熔膠 / 模溫或調整澆口尺寸，而不是無限加保壓。','若為結構肉厚造成，回到模具 / 產品設計與冷卻改善。']},
- flash:{title:'毛邊 / 飛邊',checks:['確認分模面、滑塊與排氣位置是否有損傷、異物或間隙。','確認實際鎖模力是否足夠，是否在充填末端被撐開。','確認射出量、射速、射壓 / 保壓及熔膠溫度是否過高。'],actions:['先處理模具分模面 / 排氣異常，再判斷是否需要增加鎖模力。','逐步降低不必要的末段射速、射壓或保壓，觀察毛邊與充填平衡。','若需要靠過高鎖模力才能壓住，應重新檢查澆口、流道、排氣與產品投影面積。']},
- short:{title:'短射 / 充填不足',checks:['確認機台是否壓力受限、射量 / cushion 是否足夠。','檢查噴嘴、澆口、流道是否阻塞或提前冷卻。','檢查末端排氣與困氣。'],actions:['先確認射量與壓力限制，再逐步增加射速 / 射壓。','若料流過早凍結，再評估合理提高熔膠 / 模具溫度。','若仍不足，檢查澆口 / 流道尺寸、排氣與機台射出容量。']},
- weld:{title:'結合線 / 熔接線',checks:['確認結合線位置是否由多股料流、孔洞或多澆口造成。','檢查料流前端溫度、模溫與射速是否不足。','檢查結合區排氣是否良好。'],actions:['逐步提高合理射速，使料流前端保持較高能量。','依材料 TDS 合理提高熔膠 / 模具溫度。','改善結合區排氣；必要時評估澆口位置 / 溢流井等模具設計。']},
- splay:{title:'銀紋 / 水氣紋',checks:['先確認材料含水與乾燥設備狀態，尤其 PET / PC / PA。','排除油、水、回料污染與料管內材料劣化。','確認螺桿轉速、背壓、料溫與澆口剪切是否過高。'],actions:['第一優先確認乾燥條件與原料 TDS，避免先亂改射壓。','若乾燥正常，再逐步降低不必要的螺桿周速 / 背壓 / 熔膠溫度。','若缺陷集中在澆口附近，再測試降低前段 / 局部射速並檢查澆口剪切。']},
- burn:{title:'燒焦 / 柴油效應',checks:['優先檢查末端困氣、排氣槽是否堵塞或不足。','確認缺陷是否固定出現在最後充填區。','確認末段射速與熔膠溫度是否過高。'],actions:['先清潔 / 改善排氣，因困氣是常見根因。','降低末段射速，避免空氣被快速壓縮升溫。','依材料 TDS 檢查熔膠溫度與滯留時間，避免熱劣化。']},
- void:{title:'氣泡 / 真空孔洞',checks:['先區分是水氣 / 揮發氣體，還是厚肉收縮形成的真空孔洞。','若有銀紋伴隨，先查乾燥與材料污染。','若是厚肉內部孔洞，檢查保壓、澆口封口與冷卻。'],actions:['水氣型：先處理乾燥與污染，再調機。','真空孔洞型：確認保壓有效時間並改善澆口 / 肉厚 / 冷卻。','不要把兩種不同根因都用單純增加射壓處理。']},
- warp:{title:'翹曲',checks:['確認冷卻回路與模溫是否左右 / 前後不平衡。','檢查產品肉厚、澆口位置與流動取向。','玻纖材料需特別考慮纖維取向造成的各向異性收縮。'],actions:['先改善冷卻與模溫平衡，再調保壓。','評估分段射速降低局部取向應力。','若為結構 / 澆口造成，優先回到模具與產品設計，不要只靠製程補償。']},
- jetting:{title:'噴射紋',checks:['確認熔膠是否從小澆口高速噴入自由空間。','檢查前段射速與澆口位置。','檢查熔膠 / 模具溫度是否造成料流過快冷卻。'],actions:['優先降低第一段射速，使熔膠貼模流動。','若機台支援，建立多段射速：過澆口慢、建立料流後再加速。','必要時評估澆口位置 / 尺寸。']},
- black:{title:'黑點 / 劣化',checks:['檢查料管、噴嘴、止逆環是否有滯料 / 碳化物。','確認熔膠溫度、停留時間、螺桿轉速與背壓是否過高。','檢查原料 / 回料污染。'],actions:['先清料 / purge 並確認污染來源。','降低不必要的料溫、轉速或背壓，縮短滯留。','若反覆出現，檢查死角、螺桿料管磨耗與清機程序。']},
- demold:{title:'脫模不良',checks:['檢查拔模角、咬花、倒扣與模具表面狀態。','判斷是黏母模、黏公模、澆口 / 水口脫模哪一種。','檢查保壓、冷卻時間、模溫與頂出是否合理。'],actions:['先依黏模位置確認模具根因，不要只加頂出力。','合理調整保壓 / 冷卻 / 模溫，避免過度包緊。','必要時改善拔模角、拋光、頂出配置或模具表面。']}
+const DEFECTS={
+ sink:{title:'縮水 / 凹痕',checks:['確認保壓是否有效到澆口封口。','檢查肉厚、肋位與局部熱點。','確認冷卻是否均勻。'],actions:['先做保壓時間 / gate freeze 確認。','再逐步調整合理保壓。','若為結構肉厚造成，回到模具與產品設計。']},
+ flash:{title:'毛邊',checks:['檢查分模面與排氣。','確認實際鎖模力餘裕。','確認末段射速 / 射壓是否過高。'],actions:['先排除模具分模面問題。','再降低不必要的末段射速 / 壓力。','若仍靠高鎖模力壓住，重查澆口與投影面積。']},
+ short:{title:'短射',checks:['確認射量與 cushion。','確認是否壓力受限。','檢查澆口、流道與排氣。'],actions:['先確認射量 / 壓力限制。','再逐步調整射速與合理料溫。','仍不足就回頭檢查流道 / 排氣 / 射出容量。']},
+ weld:{title:'結合線',checks:['確認料流匯合位置。','檢查料流前端溫度與射速。','檢查匯合區排氣。'],actions:['先改善合理射速。','依材料調整熔膠 / 模溫。','必要時修改排氣或澆口。']},
+ splay:{title:'銀紋',checks:['先確認材料乾燥，尤其 PET / PC / PA。','排除污染與材料劣化。','檢查螺桿周速、背壓與澆口剪切。'],actions:['第一優先確認乾燥與材料 TDS。','再降低不必要的剪切 / 背壓。','若集中澆口附近，再檢查前段射速。']},
+ burn:{title:'燒焦',checks:['優先檢查末端困氣與排氣。','確認是否固定發生在最後充填區。','確認末段速度與料溫。'],actions:['先改善排氣。','降低末段射速。','再檢查材料滯留與溫度。']},
+ void:{title:'氣泡 / Void',checks:['先區分水氣泡與收縮真空孔洞。','有銀紋時先查乾燥。','厚肉內部 Void 查保壓與澆口封口。'],actions:['水氣型先處理乾燥。','Void 型確認保壓有效時間。','必要時改善澆口 / 肉厚 / 冷卻。']},
+ warp:{title:'翹曲',checks:['確認冷卻與模溫平衡。','檢查肉厚與澆口。','GF 材料檢查纖維取向。'],actions:['先改善冷卻平衡。','再調保壓 / 分段射速。','結構性問題回到模具設計。']},
+ jetting:{title:'噴射紋',checks:['確認小澆口高速噴射。','檢查第一段射速。','確認澆口位置。'],actions:['降低過澆口的第一段速度。','建立多段射速。','必要時調整澆口。']},
+ black:{title:'黑點 / 劣化',checks:['檢查料管 / 噴嘴滯料。','檢查料溫、滯留、轉速、背壓。','排除原料污染。'],actions:['先清料並找污染來源。','降低不必要的熱與剪切。','反覆發生則檢查死角與磨耗。']}
 };
 
 createApp({
- data(){
-  return{
-   tab:'selection',mode:3,material:'PET',driveType:'EH-DS',
-   form1:{area:300,weight:160},form2:{length:200,width:150,thickness:2.5},form3:{singleWeight:28,cavities:8},form4:{volume:180,projArea:320},form5:{oldTonnage:180,shotWeight:null},
-   mold:{width:450,height:450,depth:null,opening:null},
-   cad:{name:'',status:'尚未上傳',ok:false,widthMm:null,heightMm:null,unitLabel:'',method:'',extension:''},
-   factory:{length:6500,width:2400,height:3000,reserveLength:0,reserveWidth:0,reserveHeight:0},
-   avgWallThickness:2.5,
-   production:{actualCycle:null,cavities:8,uptime:90,yieldRate:98,hoursPerDay:20,daysPerMonth:26,monthlyDemand:0},
-   tuning:{screwDiameter:46,meteringStroke:130,meteringEfficiency:85,screwRpm:50,backPressure:null,grade:'',dryingTemp:null,dryingHours:null,meltTemp:null,moldTemp:null,injectionSpeed:null,holdPressure:null,defect:'splay',severity:'中等',trialNote:'',trialResult:'未評估'},
-   tuningTrials:[],
-   energy:{source:'actual',oldKw:null,newKw:null,price:null,extraCost:0,hoursPerDay:20,daysPerYear:300},
-   project:{company:'',contact:'',name:'',owner:''},
-   selectionResult:null,pdfBusy:false
-  }
- },
- mounted(){
-   try{const saved=localStorage.getItem('omc_tuning_trials');if(saved)this.tuningTrials=JSON.parse(saved)||[];}catch(e){}
- },
- watch:{
-   'form3.cavities'(v){if(this.mode===3&&Number(v)>0)this.production.cavities=Number(v);},
-   mode(v){if(v===3&&Number(this.form3.cavities)>0)this.production.cavities=Number(this.form3.cavities);}
- },
+ data(){return{
+  tab:'advisor',step:1,path:'quick',result:null,
+  precisionOptions:[{v:'general',t:'一般產品'},{v:'precision',t:'精密'},{v:'medical',t:'醫療'},{v:'optical',t:'光學'},{v:'appearance',t:'高外觀'}],
+  a:{material:'PET',grade:'',fillerType:'none',fillerPct:0,precision:'medical',weightTolerance:'1',partWeight:3.26,cavitiesKnown:true,cavities:32,monthlyDemand:0,hoursDay:20,daysMonth:26,projL:75,projW:12.4,wall:1,exactArea:null,runnerType:'hot',runnerWeight:0,cycle:6.8,knownPressure:null,hasMold:true,moldW:520,moldH:750,moldD:null,moldKg:1110,opening:null,eject:null,factoryL:null,factoryW:null,factoryH:null},
+  cad:{name:'',status:'',ok:false,widthMm:null,heightMm:null},
+  tuning:{defect:'splay',note:''},trials:[],
+  energy:{oldKw:null,newKw:null,price:null,extra:0,hours:20,days:300},
+  project:{company:'',contact:'',name:'PET Test Tube',owner:''}
+ }},
+ mounted(){try{this.trials=JSON.parse(localStorage.getItem('omc_v3_trials')||'[]')}catch(e){}},
  computed:{
   reportDate(){return new Date().toLocaleDateString('zh-TW')},
-  materialQuick(){return PROCESS_DB[this.material]||PROCESS_DB.PP},
-  mode2Area(){return Math.round((((Number(this.form2.length)||0)*(Number(this.form2.width)||0))/100)*10)/10},
-  selectionCalc(){
-   const coeffs={PP:.35,ABS:.45,PET:.65,PC:.65,PA_GF:.70};
-   const density=this.materialQuick.density||1;
-   const coeff=coeffs[this.material]||.45;
-   let area=0,totalWeight=null,areaEstimated=false;
-   if(this.mode===1){area=Number(this.form1.area)||0;totalWeight=Number(this.form1.weight)>0?Number(this.form1.weight):null}
-   else if(this.mode===2){area=((Number(this.form2.length)||0)*(Number(this.form2.width)||0))/100;const t=Number(this.form2.thickness)||0;if(area>0&&t>0)totalWeight=Math.round(area*(t/10)*density*1.2);areaEstimated=true}
-   else if(this.mode===3){const cav=Math.max(1,Number(this.form3.cavities)||1);totalWeight=Math.round((Number(this.form3.singleWeight)||0)*cav*1.15);area=Math.round(totalWeight*1.5);areaEstimated=true}
-   else if(this.mode===4){area=Number(this.form4.projArea)||0;if(Number(this.form4.volume)>0)totalWeight=Math.round(Number(this.form4.volume)*density)}
-   else{area=Math.round((Number(this.form5.oldTonnage)||0)/coeff);totalWeight=Number(this.form5.shotWeight)>0?Number(this.form5.shotWeight):null;areaEstimated=true}
-   return{coeff,density,area,totalWeight,areaEstimated}
+  precisionLabel(){return(this.precisionOptions.find(x=>x.v===this.a.precision)||{}).t||this.a.precision},
+  resolvedCavities(){
+   if(this.a.cavitiesKnown)return Math.max(1,Number(this.a.cavities)||1);
+   const dem=Number(this.a.monthlyDemand)||0,cy=Number(this.a.cycle)||0,h=Number(this.a.hoursDay)||0,d=Number(this.a.daysMonth)||0;
+   if(dem>0&&cy>0&&h>0&&d>0)return Math.max(1,Math.ceil(dem*cy/(3600*h*d*.85)));
+   return 1
   },
-  cycleEstimate(){
-   if(!(this.selectionCalc.area>0&&Number(this.mold.width)>0&&Number(this.mold.height)>0&&Number(this.avgWallThickness)>0))return null;
-   const coolingCoeffs={PP:1.8,ABS:1.8,PET:2.5,PC:2.5,PA_GF:1.8};
-   const required=this.selectionCalc.area*this.selectionCalc.coeff*1.2;
-   const base=MACHINE_DB.find(m=>m.tonnage>=required)||MACHINE_DB[MACHINE_DB.length-1];
-   const fit=MACHINE_DB.find(m=>this.machineMoldFit(m,Number(this.mold.width),Number(this.mold.height)).fit)||MACHINE_DB[MACHINE_DB.length-1];
-   const selected=base.tonnage>=fit.tonnage?base:fit;
-   const wall=Number(this.avgWallThickness)||0;
-   const fill=1.5,hold=wall*1.2,cooling=Math.max(3,(coolingCoeffs[this.material]||1.8)*Math.pow(wall,2)),dry=selected.tonnage<=140?2:(selected.tonnage<=320?3.2:4.5);
-   const r=n=>Math.round(n*10)/10;return{fill:r(fill),hold:r(hold),cooling:r(cooling),dry:r(dry),total:r(fill+hold+cooling+dry)}
+  diagnostic(){return DEFECTS[this.tuning.defect]||DEFECTS.short},
+  tco(){
+   const o=Number(this.energy.oldKw)||0,n=Number(this.energy.newKw)||0,p=Number(this.energy.price)||0,h=Number(this.energy.hours)||0,d=Number(this.energy.days)||0;
+   if(!(o>0&&n>0&&p>0&&h>0&&d>0))return null;
+   const oldCost=Math.round(o*h*d*p),newCost=Math.round(n*h*d*p),saving=oldCost-newCost,extra=Number(this.energy.extra)||0;
+   return{oldCost,newCost,saving,payback:saving>0&&extra>0?(Math.round(extra/saving*10)/10)+' 年':(saving>0?'未輸入額外投資':'目前沒有節能差')}
   },
-  effectiveCycle(){const a=Number(this.production.actualCycle)||0;return a>0?Math.round(a*10)/10:(this.cycleEstimate?this.cycleEstimate.total:0)},
-  productionMetrics(){
-   if(!(this.effectiveCycle>0))return null;
-   const cav=Math.max(1,Number(this.production.cavities)||1),theoretical=Math.floor(3600/this.effectiveCycle*cav);
-   const uptime=Math.max(0,Math.min(100,Number(this.production.uptime)||0))/100,yieldRate=Math.max(0,Math.min(100,Number(this.production.yieldRate)||0))/100;
-   const good=Math.floor(theoretical*uptime*yieldRate),daily=Math.floor(good*(Number(this.production.hoursPerDay)||0)),monthly=Math.floor(daily*(Number(this.production.daysPerMonth)||0));
-   const demand=Number(this.production.monthlyDemand)||0,required=(demand>0&&monthly>0)?Math.ceil(demand/monthly):0;
-   return{theoreticalHourly:theoretical,goodHourly:good,dailyGood:daily,monthlyGood:monthly,requiredMachinesText:required>0?required+' 台':'尚未輸入月需求'}
-  },
-  footprintOptions(){
-   if(!this.selectionResult)return[];
-   const m=MACHINE_DB.find(x=>x.tonnage===this.selectionResult.selectedTonnage);if(!m)return[];
-   const fl=Number(this.factory.length)||0,fw=Number(this.factory.width)||0,fh=Number(this.factory.height)||0,rl=Number(this.factory.reserveLength)||0,rw=Number(this.factory.reserveWidth)||0,rh=Number(this.factory.reserveHeight)||0;
-   return m.units.map(u=>{const rawFit=(!fl||u.length<=fl)&&(!fw||m.width<=fw)&&(!fh||m.height<=fh);const needLength=u.length+rl,needWidth=m.width+rw,needHeight=m.height+rh;const fitWithReserve=(!fl||needLength<=fl)&&(!fw||needWidth<=fw)&&(!fh||needHeight<=fh);return{unit:u.unit,length:u.length,width:m.width,height:m.height,baseL:m.baseL,d1:m.d1,h1:m.h1,needLength,needWidth,needHeight,rawFit,fitWithReserve,areaM2:Math.round(u.length*m.width/1000000*100)/100}})
-  },
-  bestFootprint(){return this.footprintOptions.find(x=>x.fitWithReserve)||this.footprintOptions.find(x=>x.rawFit)||this.footprintOptions[0]||null},
-  factorySummary(){
-   if(!this.selectionResult)return{status:'none',label:'未計算',reportLabel:'未計算'};
-   if(this.footprintOptions.some(x=>x.fitWithReserve))return{status:'ok',label:'✅ 可配置',reportLabel:'含目前預留可配置'};
-   if(this.footprintOptions.some(x=>x.rawFit))return{status:'warn',label:'⚠️ 裸機可放',reportLabel:'裸機可放，但目前預留不足'};
-   return{status:'bad',label:'❌ 空間不足',reportLabel:'目前空間不足'}
-  },
-  meteringCalc(){
-   const d=Number(this.tuning.screwDiameter)||0,s=Number(this.tuning.meteringStroke)||0,e=Math.max(0,Math.min(100,Number(this.tuning.meteringEfficiency)||0))/100;
-   if(!(d>0&&s>0&&e>0))return null;
-   const volume=Math.PI*Math.pow(d,2)/4*s/1000*e,weight=volume*this.selectionCalc.density,rpm=Number(this.tuning.screwRpm)||0,peripheral=Math.PI*(d/1000)*rpm/60;
-   let useText='待有每模重量後比較';if(this.selectionCalc.totalWeight>0)useText=Math.round(this.selectionCalc.totalWeight/weight*1000)/10+'%';
-   return{volume:Math.round(volume*10)/10,weight:Math.round(weight*10)/10,peripheralSpeed:Math.round(peripheral*1000)/1000,capacityUseText:useText}
-  },
-  diagnosticPlan(){
-   const base=DEFECT_DB[this.tuning.defect]||DEFECT_DB.short;
-   const checks=base.checks.slice(),actions=base.actions.slice();let confidence='中';
-   if(this.tuning.defect==='splay'&&['PET','PC','PA_GF'].includes(this.material)){checks.unshift('目前材料 '+this.material+' 對水分較敏感：先核對乾燥機、乾燥紀錄與實際牌號 TDS。');confidence='中高'}
-   if(this.tuning.defect==='short'&&this.selectionResult&&this.selectionResult.utilization!==null&&this.selectionResult.utilization>80){checks.unshift('目前射量利用率約 '+this.selectionResult.utilization+'%，接近 / 超過建議區間，先確認射出容量與 cushion。');confidence='中高'}
-   if(this.tuning.defect==='flash'&&this.selectionResult&&this.selectionResult.requiredTonnage/this.selectionResult.selectedTonnage>.9){checks.unshift('目前理論鎖模力已接近建議級距，先確認實際鎖模力餘裕與模具分模面。');confidence='中高'}
-   if(this.tuning.defect==='burn'){confidence='高';}
-   if(!this.tuning.meltTemp&&!this.tuning.moldTemp&&!this.tuning.injectionSpeed)confidence='中（現場參數不足）';
-   return{title:base.title,checks,actions,confidence}
-  },
-  energyAnalysis(){
-   const oldKw=Number(this.energy.oldKw)||0,newKw=Number(this.energy.newKw)||0,price=Number(this.energy.price)||0,h=Number(this.energy.hoursPerDay)||0,d=Number(this.energy.daysPerYear)||0;
-   if(oldKw<=0||newKw<=0||price<=0||h<=0||d<=0)return null;
-   const oldKwh=oldKw*h*d,newKwh=newKw*h*d,annualKwh=Math.round(oldKwh-newKwh),oldAnnualCost=Math.round(oldKwh*price),newAnnualCost=Math.round(newKwh*price),annualSaving=oldAnnualCost-newAnnualCost;
-   const percent=Math.round((oldKw-newKw)/oldKw*1000)/10,extra=Number(this.energy.extraCost)||0;
-   let paybackText='未輸入額外投資';if(annualSaving>0&&extra>0)paybackText=(Math.round(extra/annualSaving*10)/10)+' 年';else if(annualSaving<=0)paybackText='目前輸入未形成節能差';
-   return{oldAnnualCost,newAnnualCost,annualSaving,annualKwh,percentText:percent+'%',paybackText}
-  },
-  energySourceLabel(){return{actual:'客戶 / 現場實際量測',omc:'OMC 測試資料',estimate:'人工估算'}[this.energy.source]||'未標示'},
-  advisorMessages(){
-   const a=[];
-   if(!this.selectionResult)a.push('尚未完成智慧選機、模具與廠房評估。');
-   if(this.selectionResult&&this.selectionCalc.areaEstimated)a.push('投影面積目前屬前期粗估；正式鎖模力應優先使用 CAD / 實際投影面積。');
-   if(this.cad.name&&this.cad.ok)a.push('CAD 外框為自動初判，可能包含圖框 / 標註；必須人工確認後才可視為模具尺寸。');
-   if(this.production.actualCycle<=0)a.push('產能目前若使用系統估算 Cycle Time，試模後應改用實測週期。');
-   a.push('現場調機建議為排查方向，不應一次同時更改多個主要變數；需記錄每次調整前後結果。');
-   if(this.energyAnalysis)a.push('節能 / TCO 數據來源：'+this.energySourceLabel+'。');
-   else a.push('尚未完成節能 / TCO 分析。');
-   a.push('正式購機、材料工藝與量產參數需依 OMC 官方規格、原料供應商 TDS、模具圖面與實際試模再次確認。');
-   return a
+  reportWarnings(){
+   const x=[];if(!this.result)x.push('尚未完成 AI 選型。');
+   if(this.result&&this.result.areaSource!=='工程輸入的總投影面積')x.push('目前鎖模力使用產品尺寸估算投影面積，正式下單前需以模具 / CAD 投影面積確認。');
+   if(this.result)x.push('目前 OMC 射出單元各螺桿直徑的正式射量、最高射壓、塑化量與 L/D 資料庫尚待補齊，因此不虛構 Ø 規格。');
+   if(this.a.hasMold)x.push('模具外形已納入柱間方向判斷；模板尺寸、模厚、最大開距、頂出與模重限制仍需 OMC 官方規格確認。');
+   if(!this.a.cycle)x.push('Cycle Time 未提供，塑化能力只能標示待確認。');
+   return x
   }
  },
  methods:{
-  machineMoldFit(machine,w,h){
-   w=Number(w)||0;h=Number(h)||0;
-   if(!(w>0&&h>0))return{fit:false,orientation:'',reason:'模具尺寸不足'};
-   const plateW=Number(machine.platen)||0,plateH=Number(machine.platen)||0;
-   const tieW=Number(machine.tieBar)||0,tieH=Number(machine.tieBar)||0;
-   const test=(mw,mh,label)=>{
-    const platenFit=mw<=plateW&&mh<=plateH;
-    const clearsBars=(mw<=tieW)||(mh<=tieH);
-    return{fit:platenFit&&clearsBars,platenFit,clearsBars,label,mw,mh};
-   };
-   const normal=test(w,h,'原方向');
-   const rotated=test(h,w,'旋轉90°');
-   const best=normal.fit?normal:(rotated.fit?rotated:normal);
-   let reason='';
-   if(best.fit){
-    const through=best.mw<=tieW?'寬度 '+best.mw+' mm 小於柱間 '+tieW+' mm':'高度 '+best.mh+' mm 小於柱間 '+tieH+' mm';
-    reason=best.label+'：模板 '+plateW+'×'+plateH+' mm 可容納，且'+through+'；另一方向可在模板範圍內延伸，不再要求兩邊都小於柱間。';
-   }else if(!normal.platenFit&&!rotated.platenFit){
-    reason='模具外形超出模板 '+plateW+'×'+plateH+' mm。';
-   }else{
-    reason='模具雖在模板範圍內，但寬、高都超過柱間淨距 '+tieW+'×'+tieH+' mm，需工程確認是否會干涉拉桿。';
+  runAdvisor(){
+   const m=MATERIAL[this.a.material]||MATERIAL.其他,cav=this.resolvedCavities,part=Math.max(0,Number(this.a.partWeight)||0);
+   const runner=this.a.runnerType==='hot'?0:Math.max(0,Number(this.a.runnerWeight)||0);
+   const shot=part*cav+runner,vol=shot/(m.density||1);
+   let area=Number(this.a.exactArea)||0,areaSource='工程輸入的總投影面積';
+   if(!(area>0)){area=((Number(this.a.projL)||0)*(Number(this.a.projW)||0)/100)*cav;areaSource='由產品最大投影尺寸 × 穴數估算'}
+   if(!(area>0)){alert('至少需要產品投影長、寬，或工程總投影面積。');return}
+   const required=area*m.clamp*1.2;
+   let machine=MACHINE_DB.find(x=>x.tonnage>=required)||MACHINE_DB[MACHINE_DB.length-1];
+   if(this.a.hasMold){
+     const mw=Number(this.a.moldW)||0,mh=Number(this.a.moldH)||0;
+     if(mw>0&&mh>0){
+       const fit=MACHINE_DB.find(x=>x.tonnage>=required&&(mw<=x.tieBar||mh<=x.tieBar));
+       if(fit)machine=fit;
+     }
    }
-   return{fit:best.fit,orientation:best.label,reason,platen:plateW,tieBar:tieW};
-  },
-  calculateSelection(){
-   const c=this.selectionCalc;if(!(c.area>0&&Number(this.mold.width)>0&&Number(this.mold.height)>0)){alert('請補齊產品資料與模具寬 / 高。');return}
-   const required=c.area*c.coeff*1.2,base=MACHINE_DB.find(m=>m.tonnage>=required)||MACHINE_DB[MACHINE_DB.length-1],fit=MACHINE_DB.find(m=>this.machineMoldFit(m,Number(this.mold.width),Number(this.mold.height)).fit)||null;
-   let selected=base,upgraded=false;if(fit&&fit.tonnage>base.tonnage){selected=fit;upgraded=true}if(!fit)selected=MACHINE_DB[MACHINE_DB.length-1];
-   const moldFitDetail=this.machineMoldFit(selected,Number(this.mold.width),Number(this.mold.height));const fitmentOk=moldFitDetail.fit;let util=null,utilOk=null;
-   if(c.totalWeight){const reqVol=c.totalWeight/c.density;util=Math.round(reqVol/selected.capacity*100);utilOk=util>=20&&util<=80}
-   this.selectionResult={machineModel:'OS'+selected.tonnage+this.driveType,requiredTonnage:Math.round(required*10)/10,baseTonnage:base.tonnage,selectedTonnage:selected.tonnage,upgraded,tonnageOk:selected.tonnage>=required,fitmentOk,moldFitDetail,utilization:util,utilizationOk:utilOk,utilizationText:util===null?'待補射出重量':util+'%'};
-   if(this.mode===3&&Number(this.form3.cavities)>0)this.production.cavities=Number(this.form3.cavities)
+   let moldFit={level:'none',text:'未提供模具外形，先完成噸數選型；正式安裝需補模具資料。'};
+   if(this.a.hasMold&&Number(this.a.moldW)>0&&Number(this.a.moldH)>0){
+    const mw=Number(this.a.moldW),mh=Number(this.a.moldH);
+    if(mw<=machine.tieBar&&mh<=machine.tieBar)moldFit={level:'ok',text:'模具 '+mw+'×'+mh+' mm 兩方向都在柱間 '+machine.tieBar+' mm 內；柱間條件良好。模板 / 模厚等仍需官方規格確認。'};
+    else if(mw<=machine.tieBar||mh<=machine.tieBar)moldFit={level:'ok',text:'模具 '+mw+'×'+mh+' mm 至少一邊可通過 '+machine.tieBar+' mm 柱間；另一邊不再錯誤要求必須小於柱間。模板是否完整承載需再比對 OMC 模板尺寸。'};
+    else moldFit={level:'warn',text:'模具 '+mw+'×'+mh+' mm 兩邊都大於 '+machine.tieBar+' mm 柱間，存在拉桿干涉風險；需更大級距或工程確認安裝方式。'};
+   }
+   const capMin=vol>0?Math.round(vol/.7*10)/10:0,capMax=vol>0?Math.round(vol/.3*10)/10:0;
+   const cycle=Number(this.a.cycle)||0,plast=cycle>0&&shot>0?(Math.round((shot/cycle*3.6)*10)/10+' kg/h'):'待 Cycle Time';
+   const flowRatio=(Number(this.a.wall)>0)?Math.max(Number(this.a.projL)||0,Number(this.a.projW)||0)/Number(this.a.wall):0;
+   let pressure=m.pressure,pressureReason='依材料特性初判';
+   if(Number(this.a.wall)>0&&Number(this.a.wall)<1){pressure='高';pressureReason='薄壁 < 1 mm，提高射壓 / 射速能力權重'}
+   else if(flowRatio>150){pressure='高';pressureReason='流長 / 肉厚比偏高'}
+   else if(Number(this.a.knownPressure)>0){pressure='以實測 '+this.a.knownPressure+' 為基準';pressureReason='已有現場實測壓力，正式配螺桿時優先使用'}
+   let checkScore=0,freeScore=0;
+   if(['precision','medical','optical'].includes(this.a.precision))checkScore+=3;if(cav>=16)checkScore+=2;if(Number(this.a.weightTolerance)>0&&Number(this.a.weightTolerance)<=1)checkScore+=2;
+   if(['PC','ABS'].includes(this.a.material))freeScore+=2;if(this.a.precision==='general'&&cav<=4)freeScore+=1;
+   const checkRing=checkScore>=freeScore+2?'偏向有卡口 / 高重複性止逆環':'偏向無卡口 / 低限制自由型止逆環';
+   const checkReason=checkScore>=freeScore+2?'多穴 / 精密 / 醫療或重量一致性要求提高了 shot-to-shot 重複性權重。最終仍以 OMC 實際止逆環設計與試模確認。':'目前產品更重視流動限制與材料剪切；若後續重量重複性要求提高，可再切換高重複性方案。';
+   const pct=Number(this.a.fillerPct)||0,ft=this.a.fillerType;
+   let barrel='標準螺桿 / 料管配置',barrelReason='目前未看到高磨耗或高腐蝕條件。';
+   if(ft==='GF_FR'){barrel=pct>30?'高耐磨＋高耐腐蝕雙合金：強烈推薦':'耐磨＋耐腐蝕雙合金：推薦';barrelReason='玻纖同時帶來磨耗，阻燃配方又提高腐蝕風險。'}
+   else if(['GF','CF','mineral'].includes(ft)){barrel=pct>30?'高耐磨雙合金：強烈推薦':'耐磨雙合金：建議';barrelReason='填充物會提高螺桿 / 料管磨耗；比例越高，耐磨等級權重越高。'}
+   else if(ft==='FR'){barrel='耐腐蝕型雙合金：建議';barrelReason='阻燃 / 添加劑可能提高腐蝕風險，需依實際牌號再確認。'}
+   let confidence=this.path==='engineering'?62:45;
+   if(this.a.grade)confidence+=5;if(Number(this.a.exactArea)>0)confidence+=12;if(this.a.hasMold&&Number(this.a.moldW)>0&&Number(this.a.moldH)>0)confidence+=8;if(this.a.cycle)confidence+=5;if(this.a.runnerType!=='unknown')confidence+=4;if(this.a.partWeight>0)confidence+=4;if(this.a.wall>0)confidence+=3;confidence=Math.min(95,confidence);
+   const lengths=machine.units.map(x=>x.length),lengthRange=Math.min(...lengths)+'–'+Math.max(...lengths)+' mm（依射座）';
+   this.result={
+    machine,machineModel:'OS'+machine.tonnage,confidence,shotWeight:Math.round(shot*100)/100,shotVolume:Math.round(vol*10)/10,
+    runnerStatus:this.a.runnerType==='hot'?'熱澆道：水口以 0 計':(Number(this.a.runnerWeight)>0?'已含水口':'冷澆道但水口重量未補'),
+    area:Math.round(area*10)/10,areaSource,requiredTonnage:Math.round(required*10)/10,units:machine.units.map(x=>x.unit).join(' / '),lengthRange,moldFit,
+    screw:{capacityMin:capMin,capacityMax:capMax,plasticizing:plast,pressureClass:pressure,pressureReason,
+      diameterAnswer:'待 OMC 螺桿資料庫自動配對',
+      ld:m.ld,ldReason:m.ldReason,checkRing,checkReason,barrel,barrelReason},
+    explain:[
+      {n:'01',title:'先算每模實際 Shot',text:'單件重量 × 穴數 + 水口重量 = '+Math.round(shot*100)/100+' g。'},
+      {n:'02',title:'再算投影面積與鎖模力',text:areaSource+'；目前需求約 '+Math.round(required*10)/10+'T。'},
+      {n:'03',title:'再檢查模具是否會碰柱',text:moldFit.text},
+      {n:'04',title:'最後才選射出單元 / 螺桿',text:'同時比較射量窗口、射壓與 Cycle 所需塑化能力，不用「噸數固定配某支螺桿」的簡化方式。'}
+    ]
+   };
+   this.step=5;window.scrollTo({top:0,behavior:'smooth'})
   },
   handleCadUpload(e){
-   const file=e.target.files&&e.target.files[0];if(!file)return;
-   const ext=(file.name.split('.').pop()||'').toLowerCase();
-   this.cad={name:file.name,status:'已上傳，等待判讀',ok:false,widthMm:null,heightMm:null,unitLabel:'',method:'',extension:ext};
-   if(ext!=='dxf'){this.cad.status=ext==='dwg'?'DWG 已記錄；目前建議先轉成 DXF 以自動計算。':'檔案已記錄；目前自動尺寸初判優先支援 DXF。';return}
-   const reader=new FileReader();
-   reader.onload=()=>{try{const r=this.parseDxf(String(reader.result||''));if(r.ok){this.cad={name:file.name,status:'DXF 外框尺寸已初步取得，請人工確認',ok:true,widthMm:r.widthMm,heightMm:r.heightMm,unitLabel:r.unitLabel,method:r.method,extension:ext}}else{this.cad.status='DXF 已讀取，但找不到可靠外框尺寸；請手動輸入模具尺寸。'}}catch(err){this.cad.status='DXF 解析失敗；請確認是否為 ASCII DXF，或改手動輸入。'}};
-   reader.readAsText(file)
+   const file=e.target.files&&e.target.files[0];if(!file)return;const ext=(file.name.split('.').pop()||'').toLowerCase();
+   this.cad={name:file.name,status:'已上傳',ok:false,widthMm:null,heightMm:null};
+   if(ext!=='dxf'){this.cad.status='目前 '+ext.toUpperCase()+' 先記錄檔案；自動尺寸初判優先支援 ASCII DXF。';return}
+   const r=new FileReader();r.onload=()=>{try{const d=this.parseDxf(String(r.result||''));if(d.ok)this.cad={name:file.name,status:'DXF 外框已初判，請人工確認',ok:true,widthMm:d.w,heightMm:d.h};else this.cad.status='DXF 讀取成功，但無法取得可靠外框。'}catch(err){this.cad.status='DXF 解析失敗，請手動輸入。'}};r.readAsText(file)
   },
   parseDxf(text){
-   const lines=text.replace(/\r/g,'').split('\n'),pairs=[];for(let i=0;i+1<lines.length;i+=2){pairs.push({code:parseInt(lines[i].trim(),10),value:lines[i+1].trim()})}
-   let units=0,minX=null,minY=null,maxX=null,maxY=null;
-   const findVar=(name)=>{for(let i=0;i<pairs.length;i++){if(pairs[i].code===9&&pairs[i].value===name)return i}return-1};
-   const ui=findVar('$INSUNITS');if(ui>=0){for(let j=ui+1;j<Math.min(ui+8,pairs.length);j++){if(pairs[j].code===70){units=parseInt(pairs[j].value,10)||0;break}}}
-   const readPoint=(name)=>{const i=findVar(name);if(i<0)return null;let x=null,y=null;for(let j=i+1;j<Math.min(i+12,pairs.length);j++){if(pairs[j].code===9)break;if(pairs[j].code===10&&x===null)x=parseFloat(pairs[j].value);if(pairs[j].code===20&&y===null)y=parseFloat(pairs[j].value)}return Number.isFinite(x)&&Number.isFinite(y)?{x,y}:null};
-   const pmin=readPoint('$EXTMIN'),pmax=readPoint('$EXTMAX');let method='DXF $EXTMIN / $EXTMAX';
-   if(pmin&&pmax){minX=pmin.x;minY=pmin.y;maxX=pmax.x;maxY=pmax.y}else{
-    method='DXF 座標外框 fallback';
-    const xs=[],ys=[];for(const p of pairs){if([10,11,12,13].includes(p.code)){const n=parseFloat(p.value);if(Number.isFinite(n))xs.push(n)}if([20,21,22,23].includes(p.code)){const n=parseFloat(p.value);if(Number.isFinite(n))ys.push(n)}}
-    if(xs.length&&ys.length){minX=Math.min(...xs);maxX=Math.max(...xs);minY=Math.min(...ys);maxY=Math.max(...ys)}
-   }
-   if(![minX,minY,maxX,maxY].every(Number.isFinite))return{ok:false};
-   const unitMap={0:{f:1,l:'未指定（暫以 mm 顯示，必須確認）'},1:{f:25.4,l:'inch → mm'},2:{f:304.8,l:'ft → mm'},4:{f:1,l:'mm'},5:{f:10,l:'cm → mm'},6:{f:1000,l:'m → mm'}};
-   const u=unitMap[units]||unitMap[0],width=Math.abs(maxX-minX)*u.f,height=Math.abs(maxY-minY)*u.f;
-   if(!(width>0&&height>0))return{ok:false};
-   return{ok:true,widthMm:Math.round(width*10)/10,heightMm:Math.round(height*10)/10,unitLabel:u.l,method}
+   const l=text.replace(/\r/g,'').split('\n'),p=[];for(let i=0;i+1<l.length;i+=2)p.push({c:parseInt(l[i].trim(),10),v:l[i+1].trim()});
+   const fv=n=>{for(let i=0;i<p.length;i++)if(p[i].c===9&&p[i].v===n)return i;return-1};let units=0,ui=fv('$INSUNITS');if(ui>=0)for(let j=ui+1;j<Math.min(ui+8,p.length);j++)if(p[j].c===70){units=parseInt(p[j].v)||0;break}
+   const point=n=>{let i=fv(n);if(i<0)return null;let x=null,y=null;for(let j=i+1;j<Math.min(i+12,p.length);j++){if(p[j].c===9)break;if(p[j].c===10&&x===null)x=parseFloat(p[j].v);if(p[j].c===20&&y===null)y=parseFloat(p[j].v)}return Number.isFinite(x)&&Number.isFinite(y)?{x,y}:null};
+   const mn=point('$EXTMIN'),mx=point('$EXTMAX');if(!mn||!mx)return{ok:false};const um={0:1,1:25.4,2:304.8,4:1,5:10,6:1000},f=um[units]||1;
+   const w=Math.abs(mx.x-mn.x)*f,h=Math.abs(mx.y-mn.y)*f;return{ok:w>0&&h>0,w:Math.round(w*10)/10,h:Math.round(h*10)/10}
   },
-  applyCadToMold(){if(!this.cad.ok)return;this.mold.width=this.cad.widthMm;this.mold.height=this.cad.heightMm;this.cad.status='已由使用者確認並套用到模具寬 / 高'},
-  saveTrial(){
-   const note=(this.tuning.trialNote||'').trim();if(!note){alert('請先輸入本次調機紀錄。');return}
-   const trial={defect:DEFECT_DB[this.tuning.defect].title,result:this.tuning.trialResult,note,time:new Date().toLocaleString('zh-TW')};
-   this.tuningTrials.unshift(trial);if(this.tuningTrials.length>20)this.tuningTrials=this.tuningTrials.slice(0,20);
-   try{localStorage.setItem('omc_tuning_trials',JSON.stringify(this.tuningTrials))}catch(e){}
-   this.tuning.trialNote=''
-  },
-  exportPdf(){
-   if(!window.html2pdf){alert('PDF 元件尚未載入，請使用列印 / 系統另存 PDF。');return}
-   this.pdfBusy=true;const clean=s=>(s||'').replace(/[\\/:*?"<>|]/g,'_'),filename='OMC_'+clean(this.project.company||'客戶')+'_'+clean(this.project.name||'完整評估')+'.pdf';
-   const opt={margin:[8,8,8,8],filename,image:{type:'jpeg',quality:.96},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}};
-   window.html2pdf().set(opt).from(this.$refs.report).save().then(()=>{this.pdfBusy=false}).catch(()=>{this.pdfBusy=false;alert('PDF 產生失敗，請改用列印 / 系統另存 PDF。')})
-  },
-  windowPrint(){window.print()}
+  applyCad(){if(!this.cad.ok)return;this.a.hasMold=true;this.a.moldW=this.cad.widthMm;this.a.moldH=this.cad.heightMm;this.cad.status='已確認並套用到模具尺寸'},
+  saveTrial(){const note=(this.tuning.note||'').trim();if(!note){alert('請先輸入本次試模紀錄。');return}this.trials.unshift({time:new Date().toLocaleString('zh-TW'),defect:this.diagnostic.title,note});this.trials=this.trials.slice(0,20);localStorage.setItem('omc_v3_trials',JSON.stringify(this.trials));this.tuning.note=''},
+  exportPdf(){if(!window.html2pdf){window.print();return}const fn='OMC_'+((this.project.company||'客戶').replace(/[\\/:*?"<>|]/g,'_'))+'_'+((this.project.name||'評估').replace(/[\\/:*?"<>|]/g,'_'))+'.pdf';window.html2pdf().set({margin:[8,8,8,8],filename:fn,image:{type:'jpeg',quality:.96},html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}}).from(this.$refs.report).save()}
  }
 }).mount('#app');
 </script>
