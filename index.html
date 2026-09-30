@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="description" content="OMC Smart Injection Advisor 3.1：以客戶核心資訊完成射出機、模具、射出單元、產能、調機與 TCO 前期評估。">
+<meta name="description" content="OMC Smart Injection Advisor 3.2：以客戶核心資訊完成射出機、模具、射出單元、產能、調機與 TCO 前期評估。">
 <title>OMC Smart Injection Advisor 3.0</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -21,7 +21,7 @@ input,select,textarea{min-height:42px}.report-sheet{background:#fff;color:#0f172
 <header class="sticky top-0 z-30 bg-slate-950 px-4 py-4 text-white shadow-lg">
   <div class="flex items-center justify-between gap-3">
     <div><div class="text-[10px] font-bold tracking-[.18em] text-blue-300">OMC 超群機械</div><h1 class="text-lg font-black">Smart Injection Advisor</h1><div class="text-[10px] text-slate-400">客戶只回答知道的資料，系統負責把工程問題整理清楚</div></div>
-    <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v3.1</span>
+    <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v3.2</span>
   </div>
 </header>
 
@@ -144,7 +144,7 @@ input,select,textarea{min-height:42px}.report-sheet{background:#fff;color:#0f172
         </label>
         <label class="text-xs font-bold">水口重量 g<input v-model.number="a.runnerWeight" type="number" step="0.1" class="mt-1 w-full rounded-xl border p-2" placeholder="熱澆道可 0"></label>
         <label class="text-xs font-bold">Cycle Time 秒<input v-model.number="a.cycle" type="number" step="0.1" class="mt-1 w-full rounded-xl border p-2" placeholder="不知道可留空"></label>
-        <label class="text-xs font-bold">現有最高射壓（可選）<input v-model.number="a.knownPressure" type="number" class="mt-1 w-full rounded-xl border p-2" placeholder="有實測才填"></label>
+        <label class="text-xs font-bold">現有最高射壓 kg/cm²（可選）<input v-model.number="a.knownPressure" type="number" class="mt-1 w-full rounded-xl border p-2" placeholder="有實測才填"></label>
       </div>
     </div>
 
@@ -220,7 +220,7 @@ input,select,textarea{min-height:42px}.report-sheet{background:#fff;color:#0f172
 
     <div class="card border-cyan-200 p-4">
       <div class="flex items-center justify-between"><div class="text-sm font-black">② 射出單元 / 螺桿需求</div><span class="badge bg-cyan-100 text-cyan-700">AI 規格窗口</span></div>
-      <p class="mt-1 text-[10px] text-slate-500">現在先算出「這個產品需要什麼條件」，等 OMC 各射座螺桿規格表放進後台，就能自動變成 Ø40 / Ø46 / Ø52 等正式推薦。</p>
+      <p class="mt-1 text-[10px] text-slate-500">現在直接用型錄的螺桿直徑、理論射出容積、最大射壓與 PS 塑化能力做候選排序；Shot 使用率是主條件，再看 Cycle 所需塑化量與射壓餘裕。</p>
       <div class="mt-3 grid grid-cols-2 gap-2">
         <div class="rounded-xl bg-cyan-50 p-3"><div class="text-[9px] text-cyan-700">建議料管可用射量窗口</div><div class="text-base font-black">{{result.screw.capacityMin}}–{{result.screw.capacityMax}} cm³</div><div class="text-[9px]">以 Shot 約 30–70% 作優先篩選窗口</div></div>
         <div class="rounded-xl bg-cyan-50 p-3"><div class="text-[9px] text-cyan-700">最低塑化需求</div><div class="text-base font-black">{{result.screw.plasticizing}}</div><div class="text-[9px]">依目前 Cycle / Shot 計算</div></div>
@@ -228,8 +228,25 @@ input,select,textarea{min-height:42px}.report-sheet{background:#fff;color:#0f172
         <div class="rounded-xl bg-cyan-50 p-3"><div class="text-[9px] text-cyan-700">已確認射出配置</div><div class="text-base font-black">{{selectedInjectionUnit}} / {{selectedScrewDiameter}}</div><div class="text-[9px]">選完後會同步進完整報告</div></div>
       </div>
 
+      <div class="mt-4 rounded-2xl border border-emerald-300 bg-emerald-50/40 p-4">
+        <div class="flex items-center justify-between gap-2"><div class="text-sm font-black text-emerald-950">AI 型錄推薦</div><span class="badge bg-emerald-100 text-emerald-700">自動比較 {{autoInjectionCandidates.length}} 組</span></div>
+        <p class="mt-1 text-[10px] text-slate-500">以下是目前機台可搭射座的前 3 名。塑化能力為型錄 PS 測試值，非 PET/PC 等材料的保證值，所以仍保留工程確認。</p>
+        <div class="mt-3 space-y-2">
+          <button v-for="(x,i) in autoInjectionCandidates.slice(0,3)" :key="x.unit+'-'+x.diameter" @click="applyInjectionCandidate(x)" class="w-full rounded-xl border bg-white p-3 text-left" :class="injectionChoice.unit===x.unit && Number(injectionChoice.diameter)===x.diameter?'border-emerald-600 ring-1 ring-emerald-600':'border-slate-200'">
+            <div class="flex items-center justify-between gap-2"><div class="text-base font-black">{{i===0?'★ ':''}}{{x.unit}} / Ø{{x.diameter}}</div><span class="badge" :class="x.shotBand==='理想'?'bg-green-100 text-green-700':(x.shotBand==='可用'?'bg-amber-100 text-amber-800':'bg-red-100 text-red-700')">Shot {{x.util}}% {{x.shotBand}}</span></div>
+            <div class="mt-2 grid grid-cols-2 gap-1 text-[10px] text-slate-600 sm:grid-cols-4">
+              <div>理論射量 <b>{{x.volume}} cm³</b></div>
+              <div>最大射壓 <b>{{x.pressure}} kg/cm²</b></div>
+              <div>PS塑化 <b>{{x.plasticizing||'—'}} kg/h</b></div>
+              <div>L/D <b>{{x.ld||'—'}}</b></div>
+            </div>
+            <div v-if="x.plastMargin" class="mt-1 text-[9px] text-slate-400">型錄 PS 塑化能力 ÷ 本案重量產出需求：約 {{x.plastMargin}}×（僅作初選參考）</div>
+          </button>
+        </div>
+      </div>
+
       <div class="mt-4 rounded-2xl border border-cyan-300 bg-white p-4">
-        <div class="text-sm font-black text-cyan-950">現在就可以選射座與螺桿直徑</div>
+        <div class="text-sm font-black text-cyan-950">人工確認 / 改選射座與螺桿直徑</div>
         <p class="mt-1 text-[10px] leading-relaxed text-slate-500">射座只顯示這台機器目前資料庫允許的組合。螺桿直徑在 OMC 官方射座規格表尚未匯入前，先由 OMC 業務 / 工程或客戶依既有資料手動確認；系統不會把其他廠牌直徑冒充 OMC 規格。</p>
 
         <div class="mt-3">
@@ -244,12 +261,11 @@ input,select,textarea{min-height:42px}.report-sheet{background:#fff;color:#0f172
 
         <div class="mt-4">
           <div class="text-[10px] font-bold text-slate-600">2. 確認螺桿直徑</div>
-          <div class="mt-2 flex items-center gap-2">
-            <span class="text-lg font-black">Ø</span>
-            <input v-model.number="injectionChoice.diameter" type="number" min="1" step="1" class="w-full rounded-xl border p-2 text-base font-black" placeholder="例如 46">
-            <span class="text-xs font-bold">mm</span>
+          <div v-if="injectionChoice.unit && injectionDiametersForSelected.length" class="mt-2 grid grid-cols-4 gap-2">
+            <button v-for="d in injectionDiametersForSelected" :key="d" @click="injectionChoice.diameter=d" class="rounded-xl border py-3 text-sm font-black" :class="Number(injectionChoice.diameter)===d?'border-cyan-600 bg-cyan-600 text-white':'bg-white'">Ø{{d}}</button>
           </div>
-          <div class="mt-2 rounded-lg bg-amber-50 p-2 text-[10px] text-amber-900">⚠️ 目前這個直徑欄位是「人工確認值」。等 OMC 的 i18 / i25 / i32 各直徑、射量、最高射壓、塑化量、L/D 表匯入後，這裡會改成 AI 自動比較並推薦。</div>
+          <div v-else class="mt-2 text-[10px] text-slate-500">先選射座，系統就會顯示該射座型錄中的螺桿直徑。</div>
+          <div class="mt-2 rounded-lg bg-cyan-50 p-2 text-[10px] text-cyan-900">型錄直徑已建入資料庫；你仍可改選候選值。正式訂單前再核對實際機型版本與原料條件。</div>
         </div>
 
         <div class="mt-3 grid grid-cols-3 gap-2 text-center text-[10px]">
@@ -325,13 +341,13 @@ input,select,textarea{min-height:42px}.report-sheet{background:#fff;color:#0f172
   </div>
 
   <div ref="report" class="report-sheet card p-6 text-[11px] leading-relaxed">
-    <div class="border-b-2 border-blue-700 pb-3"><div class="text-[9px] font-bold tracking-[.18em] text-blue-700">OMC / OUTSTANDING MACHINERY MFG. CO., LTD.</div><div class="text-2xl font-black">Smart Injection Advisor 完整評估報告</div><div class="mt-2 grid grid-cols-2 gap-1 text-slate-600"><div>客戶：{{project.company||'—'}}</div><div>聯絡人：{{project.contact||'—'}}</div><div>產品：{{project.name||'—'}}</div><div>業務：{{project.owner||'—'}}</div><div>日期：{{reportDate}}</div><div>版本：v3.1</div></div></div>
+    <div class="border-b-2 border-blue-700 pb-3"><div class="text-[9px] font-bold tracking-[.18em] text-blue-700">OMC / OUTSTANDING MACHINERY MFG. CO., LTD.</div><div class="text-2xl font-black">Smart Injection Advisor 完整評估報告</div><div class="mt-2 grid grid-cols-2 gap-1 text-slate-600"><div>客戶：{{project.company||'—'}}</div><div>聯絡人：{{project.contact||'—'}}</div><div>產品：{{project.name||'—'}}</div><div>業務：{{project.owner||'—'}}</div><div>日期：{{reportDate}}</div><div>版本：v3.2</div></div></div>
 
     <section class="avoid-break mt-4"><div class="text-sm font-black text-blue-900">1. 客戶核心資料</div><div class="mt-2 rounded border p-3">選型方式：{{path==='engineering'?'工程精準選型':'快速 AI 選型'}}<br>材料：{{a.material}} <span v-if="a.grade">/ {{a.grade}}</span> ｜ 單件 {{a.partWeight||'—'}} g ｜ 穴數 {{resolvedCavities||'—'}} ｜ Cycle {{a.cycle||'—'}} s<br>產品投影：{{a.projL||'—'}} × {{a.projW||'—'}} mm ｜ 最薄肉厚 {{a.wall||'—'}} mm ｜ 精度：{{precisionLabel}}</div></section>
 
     <section class="avoid-break mt-4"><div class="text-sm font-black text-blue-900">2. OMC 機台選型</div><div v-if="result" class="mt-2 space-y-2"><div class="rounded bg-slate-900 p-3 text-white"><div class="text-xl font-black">{{result.machineModel}}</div><div>需求鎖模力 {{result.requiredTonnage}}T ｜ 建議 {{result.machine.tonnage}}T ｜ 可信度 {{result.confidence}}%</div></div><div class="rounded border p-3">柱間：{{result.machine.tieBar}} × {{result.machine.tieBar}} mm ｜ 可搭射座：{{result.units}}<br>已確認射座：{{selectedInjectionUnit}} ｜ 螺桿：{{selectedScrewDiameter}} ｜ 對應機長：{{selectedUnitLength}}<br>機台寬 {{result.machine.width}} mm ｜ 高 {{result.machine.height}} mm ｜ 長度 {{result.lengthRange}}<br>{{result.moldFit.text}}</div></div><div v-else class="mt-2 rounded border border-dashed p-3 text-slate-500">尚未完成 AI 選型。</div></section>
 
-    <section class="avoid-break mt-4"><div class="text-sm font-black text-cyan-900">3. 射出單元 / 螺桿需求</div><div v-if="result" class="mt-2 rounded border p-3">Shot：{{result.shotWeight}} g / {{result.shotVolume}} cm³<br>建議料管可用射量窗口：{{result.screw.capacityMin}}–{{result.screw.capacityMax}} cm³<br>最低塑化需求：{{result.screw.plasticizing}} ｜ 射壓方向：{{result.screw.pressureClass}}<br>L/D / 螺槽：{{result.screw.ld}}<br>止逆環：{{result.screw.checkRing}}<br>螺桿 / 料管：{{result.screw.barrel}}<br><b>目前確認配置：</b>{{selectedInjectionUnit}} / {{selectedScrewDiameter}}<br><b>AI 正式配對：</b>{{result.screw.diameterAnswer}}</div><div v-else class="mt-2 rounded border border-dashed p-3 text-slate-500">尚未完成。</div></section>
+    <section class="avoid-break mt-4"><div class="text-sm font-black text-cyan-900">3. 射出單元 / 螺桿需求</div><div v-if="result" class="mt-2 rounded border p-3">Shot：{{result.shotWeight}} g / {{result.shotVolume}} cm³<br>建議料管可用射量窗口：{{result.screw.capacityMin}}–{{result.screw.capacityMax}} cm³<br>最低塑化需求：{{result.screw.plasticizing}} ｜ 射壓方向：{{result.screw.pressureClass}}<br>L/D / 螺槽：{{result.screw.ld}}<br>止逆環：{{result.screw.checkRing}}<br>螺桿 / 料管：{{result.screw.barrel}}<br><b>AI 型錄推薦：</b><span v-if="recommendedInjection">{{recommendedInjection.unit}} / Ø{{recommendedInjection.diameter}} mm（Shot {{recommendedInjection.util}}%）</span><span v-else>—</span><br><b>目前確認配置：</b>{{selectedInjectionUnit}} / {{selectedScrewDiameter}}</div><div v-else class="mt-2 rounded border border-dashed p-3 text-slate-500">尚未完成。</div></section>
 
     <section class="avoid-break mt-4"><div class="text-sm font-black text-violet-900">4. 調機紀錄</div><div class="mt-2 rounded border p-3"><b>{{diagnostic.title}}</b><div v-if="trials.length" class="mt-2"><div v-for="(x,i) in trials" :key="i">{{i+1}}. {{x.time}}｜{{x.defect}}｜{{x.note}}</div></div><div v-else class="text-slate-500">尚無試模紀錄。</div></div></section>
 
@@ -360,6 +376,29 @@ const MACHINE_DB=[
  {tonnage:420,tieBar:760,width:1783,height:2050,units:[{unit:'i32',length:7261},{unit:'i42',length:7465},{unit:'i55',length:7998}]},
  {tonnage:550,tieBar:860,width:1963,height:2222,units:[{unit:'i42',length:7912},{unit:'i55',length:8445}]}
 ];
+
+const INJECTION_UNIT_DB={
+ i05:{diam:[20,22,25,28],vol:[31,38,49,61],pressure:[3024,2499,1935,1543],ld:[null,null,null,null]},
+ i08:{diam:[25,28,32,36],vol:[63,79,103,130],pressure:[3008,2398,1836,1450],ld:[null,null,null,null]},
+ i11:{diam:[28,32,36,40],vol:[89,116,146,181],pressure:[3000,2297,1815,1470],ld:[23.1,20,20,17.5]},
+ i14:{diam:[32,36,40,46],vol:[129,163,201,266],pressure:[2986,2359,1911,1445],ld:[23.1,20,20,17.5]},
+ i18:{diam:[36,40,46,52],vol:[187,231,306,391],pressure:[3007,2436,1842,1441],ld:[22.9,20,20,17.7]},
+ i25:{diam:[40,46,52,58],vol:[261,346,442,549],pressure:[3369,2547,1993,1602],ld:[23.1,20,20,17.5]},
+ i32:{diam:[46,52,58,65],vol:[386,493,613,770],pressure:[3043,2382,1914,1524],ld:[22.9,20,20,17.7]},
+ i42:{diam:[52,58,65,75],vol:[552,687,863,1149],pressure:[3029,2435,1938,1456],ld:[22.8,20,20,17.7]},
+ i55:{diam:[58,65,75,85],vol:[793,995,1325,1702],pressure:[3017,2402,1804,1405],ld:[22.5,20,20,17.7]}
+};
+const PLASTICIZING_DB={
+ 50:{i05:[18,22,30,42],i08:[24,34,49,68]},
+ 80:{i05:[22,27,37,52],i08:[30,42,60,83],i11:[35,51,70,93]},
+ 110:{i08:[36,50,71,99],i11:[42,61,84,112],i14:[46,63,85,121]},
+ 140:{i11:[50,71,99,132],i14:[63,88,117,167],i18:[58,78,111,152]},
+ 180:{i14:[63,88,117,167],i18:[68,91,129,177],i25:[64,92,126,177]},
+ 250:{i18:[68,91,129,177],i25:[79,92,126,177],i32:[92,126,177,223]},
+ 320:{i25:[79,113,154,217],i32:[100,137,193,243],i42:[109,154,193,272]},
+ 420:{i32:[100,137,193,243],i42:[139,196,247,348],i55:[136,171,241,327]},
+ 550:{i42:[139,196,247,348],i55:[161,202,285,387]}
+};
 const MATERIAL={
  PP:{density:.91,clamp:.35,pressure:'一般',ld:'20:1級平衡 / 偏深溝方向',ldReason:'PP 流動性通常較好，重點放在穩定塑化與產能；最終依 OMC 螺桿幾何。'},
  ABS:{density:1.05,clamp:.45,pressure:'中等',ld:'20:1級平衡 / 偏深溝方向',ldReason:'兼顧熔融均勻與避免過度剪切；實際依牌號。'},
@@ -402,6 +441,7 @@ createApp({
   precisionLabel(){return(this.precisionOptions.find(x=>x.v===this.a.precision)||{}).t||this.a.precision},
   selectedInjectionUnit(){return this.injectionChoice.unit||'尚未選擇'},
   selectedScrewDiameter(){const d=Number(this.injectionChoice.diameter)||0;return d>0?'Ø'+d+' mm':'尚未選擇'},
+  injectionDiametersForSelected(){const u=INJECTION_UNIT_DB[this.injectionChoice.unit];return u?u.diam:[]},
   selectedUnitLength(){if(!this.result||!this.injectionChoice.unit)return '—';const u=this.result.machine.units.find(x=>x.unit===this.injectionChoice.unit);return u?u.length+' mm':'—'},
   resolvedCavities(){
    if(this.a.cavitiesKnown)return Math.max(1,Number(this.a.cavities)||1);
@@ -409,6 +449,43 @@ createApp({
    if(dem>0&&cy>0&&h>0&&d>0)return Math.max(1,Math.ceil(dem*cy/(3600*h*d*.85)));
    return 1
   },
+  autoInjectionCandidates(){
+   if(!this.result)return[];
+   const ton=this.result.machine.tonnage,cycle=Number(this.a.cycle)||0,shotKgH=cycle>0?this.result.shotWeight/cycle*3.6:0;
+   const pressureClass=this.result.screw.pressureClass||'',knownP=Number(this.a.knownPressure)||0,out=[];
+   for(const mu of this.result.machine.units){
+    const unit=INJECTION_UNIT_DB[mu.unit],plastArr=(PLASTICIZING_DB[ton]||{})[mu.unit]||[];
+    if(!unit)continue;
+    for(let i=0;i<unit.diam.length;i++){
+      const util=unit.vol[i]>0?this.result.shotVolume/unit.vol[i]*100:999;
+      const plast=Number(plastArr[i])||0;
+      let score=0;
+      if(util>=30&&util<=70)score+=55-Math.abs(util-50)*0.9;
+      else if(util>=20&&util<=80)score+=25-Math.abs(util-50)*0.25;
+      else score-=45+Math.min(40,Math.abs(util-50)*0.2);
+      let plastMargin=null;
+      if(shotKgH>0&&plast>0){
+        plastMargin=plast/shotKgH;
+        if(plastMargin>=1.5)score+=25;
+        else if(plastMargin>=1.25)score+=20;
+        else if(plastMargin>=1.0)score+=8;
+        else score-=45;
+      }
+      const p=unit.pressure[i];
+      if(knownP>0){
+        const pm=p/knownP;
+        if(pm>=1.2)score+=25;else if(pm>=1.0)score+=12;else score-=55;
+      }else if(String(pressureClass).includes('高')) score+=Math.min(20,p/170);
+      else if(String(pressureClass).includes('中')) score+=Math.min(14,p/220);
+      else score+=Math.min(10,p/280);
+      if(unit.ld[i]&&unit.ld[i]>=19&&unit.ld[i]<=23.5)score+=3;
+      const shotBand=util>=30&&util<=70?'理想':(util>=20&&util<=80?'可用':'不理想');
+      out.push({unit:mu.unit,diameter:unit.diam[i],volume:unit.vol[i],pressure:p,plasticizing:plast,ld:unit.ld[i],util:Math.round(util*10)/10,plastMargin:plastMargin?Math.round(plastMargin*100)/100:null,score,shotBand,machineLength:mu.length});
+    }
+   }
+   return out.sort((a,b)=>b.score-a.score);
+  },
+  recommendedInjection(){return this.autoInjectionCandidates.length?this.autoInjectionCandidates[0]:null},
   diagnostic(){return DEFECTS[this.tuning.defect]||DEFECTS.short},
   tco(){
    const o=Number(this.energy.oldKw)||0,n=Number(this.energy.newKw)||0,p=Number(this.energy.price)||0,h=Number(this.energy.hours)||0,d=Number(this.energy.days)||0;
@@ -419,14 +496,15 @@ createApp({
   reportWarnings(){
    const x=[];if(!this.result)x.push('尚未完成 AI 選型。');
    if(this.result&&this.result.areaSource!=='工程輸入的總投影面積')x.push('目前鎖模力使用產品尺寸估算投影面積，正式下單前需以模具 / CAD 投影面積確認。');
-   if(this.result&&!this.injectionChoice.unit)x.push('尚未人工確認射座。');if(this.result&&!(Number(this.injectionChoice.diameter)>0))x.push('尚未人工確認螺桿直徑。');if(this.result)x.push('目前 OMC 射出單元各螺桿直徑的正式射量、最高射壓、塑化量與 L/D 資料庫尚待補齊；目前選到的射座 / 直徑屬人工確認值，不冒充 AI 正式推薦。');
+   if(this.result&&!this.injectionChoice.unit)x.push('尚未確認射座。');if(this.result&&!(Number(this.injectionChoice.diameter)>0))x.push('尚未確認螺桿直徑。');if(this.result)x.push('射座 / 螺桿初選已使用型錄理論射出容積、最大射壓與 PS 塑化能力排序；不同材料的實際塑化能力、實際射壓與特殊螺桿幾何仍需工程確認。');
    if(this.a.hasMold)x.push('模具外形已納入柱間方向判斷；模板尺寸、模厚、最大開距、頂出與模重限制仍需 OMC 官方規格確認。');
    if(!this.a.cycle)x.push('Cycle Time 未提供，塑化能力只能標示待確認。');
    return x
   }
  },
  methods:{
-  chooseInjectionUnit(unit){this.injectionChoice.unit=unit;try{localStorage.setItem('omc_v31_injection_choice',JSON.stringify(this.injectionChoice))}catch(e){}},
+  chooseInjectionUnit(unit){this.injectionChoice.unit=unit;const ds=(INJECTION_UNIT_DB[unit]||{}).diam||[];if(!ds.includes(Number(this.injectionChoice.diameter)))this.injectionChoice.diameter=null;try{localStorage.setItem('omc_v31_injection_choice',JSON.stringify(this.injectionChoice))}catch(e){}},
+  applyInjectionCandidate(x){this.injectionChoice.unit=x.unit;this.injectionChoice.diameter=x.diameter;try{localStorage.setItem('omc_v31_injection_choice',JSON.stringify(this.injectionChoice))}catch(e){}},
   runAdvisor(){
    const m=MATERIAL[this.a.material]||MATERIAL.其他,cav=this.resolvedCavities,part=Math.max(0,Number(this.a.partWeight)||0);
    const runner=this.a.runnerType==='hot'?0:Math.max(0,Number(this.a.runnerWeight)||0);
@@ -476,7 +554,7 @@ createApp({
     runnerStatus:this.a.runnerType==='hot'?'熱澆道：水口以 0 計':(Number(this.a.runnerWeight)>0?'已含水口':'冷澆道但水口重量未補'),
     area:Math.round(area*10)/10,areaSource,requiredTonnage:Math.round(required*10)/10,units:machine.units.map(x=>x.unit).join(' / '),lengthRange,moldFit,
     screw:{capacityMin:capMin,capacityMax:capMax,plasticizing:plast,pressureClass:pressure,pressureReason,
-      diameterAnswer:'待 OMC 螺桿資料庫自動配對',
+      diameterAnswer:'已由型錄候選資料自動排序',
       ld:m.ld,ldReason:m.ldReason,checkRing,checkReason,barrel,barrelReason},
     explain:[
       {n:'01',title:'先算每模實際 Shot',text:'單件重量 × 穴數 + 水口重量 = '+Math.round(shot*100)/100+' g。'},
@@ -485,7 +563,9 @@ createApp({
       {n:'04',title:'最後才選射出單元 / 螺桿',text:'同時比較射量窗口、射壓與 Cycle 所需塑化能力，不用「噸數固定配某支螺桿」的簡化方式。'}
     ]
    };
-   this.step=5;window.scrollTo({top:0,behavior:'smooth'})
+   this.step=5;
+   this.$nextTick(()=>{const r=this.recommendedInjection;if(r){this.injectionChoice.unit=r.unit;this.injectionChoice.diameter=r.diameter;try{localStorage.setItem('omc_v31_injection_choice',JSON.stringify(this.injectionChoice))}catch(e){}}});
+   window.scrollTo({top:0,behavior:'smooth'})
   },
   handleCadUpload(e){
    const file=e.target.files&&e.target.files[0];if(!file)return;const ext=(file.name.split('.').pop()||'').toLowerCase();
