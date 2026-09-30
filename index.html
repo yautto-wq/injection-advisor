@@ -309,7 +309,7 @@ input,select,textarea{min-height:42px}.report-sheet{background:#fff;color:#0f172
     <section class="avoid-break mt-4 border-t pt-3"><div class="text-sm font-black">資料狀態 / 待確認</div><ul class="mt-2 list-disc pl-5 text-slate-600"><li v-for="x in reportWarnings" :key="x">{{x}}</li></ul></section>
     <div class="mt-5 border-t pt-3 text-[9px] text-slate-500">本工具為前期選型、調機與成本評估。正式報價 / 下單前，需依 OMC 官方機台與射出單元規格、原料供應商 TDS、模具圖面與實際試模再次確認。估算值不取代正式工程審核。</div>
   </div>
-  <div class="no-print grid grid-cols-2 gap-2"><button @click="exportPdf" class="rounded-xl bg-blue-600 py-3 text-xs font-black text-white">⬇ 匯出完整 PDF</button><button @click="window.print()" class="rounded-xl border py-3 text-xs font-bold">列印 / 系統另存 PDF</button></div>
+  <div class="no-print grid grid-cols-2 gap-2"><button @click="exportPdf" class="rounded-xl bg-blue-600 py-3 text-xs font-black text-white">⬇ 匯出完整 PDF</button><button @click="windowPrint" class="rounded-xl border py-3 text-xs font-bold">列印 / 系統另存 PDF</button></div>
 </section>
 
 </main>
@@ -464,6 +464,7 @@ createApp({
   },
   applyCad(){if(!this.cad.ok)return;this.a.hasMold=true;this.a.moldW=this.cad.widthMm;this.a.moldH=this.cad.heightMm;this.cad.status='已確認並套用到模具尺寸'},
   saveTrial(){const note=(this.tuning.note||'').trim();if(!note){alert('請先輸入本次試模紀錄。');return}this.trials.unshift({time:new Date().toLocaleString('zh-TW'),defect:this.diagnostic.title,note});this.trials=this.trials.slice(0,20);localStorage.setItem('omc_v3_trials',JSON.stringify(this.trials));this.tuning.note=''},
+  windowPrint(){window.print()},
   exportPdf(){if(!window.html2pdf){window.print();return}const fn='OMC_'+((this.project.company||'客戶').replace(/[\\/:*?"<>|]/g,'_'))+'_'+((this.project.name||'評估').replace(/[\\/:*?"<>|]/g,'_'))+'.pdf';window.html2pdf().set({margin:[8,8,8,8],filename:fn,image:{type:'jpeg',quality:.96},html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}}).from(this.$refs.report).save()}
  }
 }).mount('#app');
