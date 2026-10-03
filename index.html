@@ -565,24 +565,27 @@ input,select,textarea{min-height:42px}
   <div class="grid gap-3 sm:grid-cols-2">
     <div class="card border-2 border-slate-300 bg-slate-50 p-4">
       <div class="flex items-center justify-between gap-2"><b>EH｜傳統油壓系統</b><span class="badge bg-slate-700 text-white">比較基準</span></div>
-      <div class="mt-2 text-xs font-black">大同 TATUNG 傳統定速感應馬達</div>
-      <p class="mt-1 text-[10px] text-slate-600">泵浦持續運轉，以相同產品、模具與週期下的整機平均功率作為比較值。</p>
+      <div class="mt-2 text-xs font-black">傳統定速油壓驅動</div>
+      <p class="mt-1 text-[10px] text-slate-600">以相同產品、模具與週期下的整機平均功率作為比較值。</p>
     </div>
     <div class="card border-2 border-emerald-400 bg-emerald-50 p-4">
       <div class="flex items-center justify-between gap-2"><b class="text-emerald-900">EH-DS｜伺服節能系統</b><span class="badge bg-emerald-600 text-white">節能方案</span></div>
-      <div class="mt-2 text-xs font-black">中國匯川 INOVANCE 電液伺服系統</div>
-      <p class="mt-1 text-[10px] text-emerald-800">以 MEG 永磁伺服馬達＋ES680 驅動架構作為公開資料參考。</p>
+      <div class="mt-2 text-xs font-black">伺服節能油壓驅動</div>
+      <p class="mt-1 text-[10px] text-emerald-800">依成型動作需求提供流量與壓力，降低非必要能源消耗。</p>
     </div>
   </div>
   <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-[10px] text-blue-900">
-    <b>官方資料參考情境</b>
-    <p class="mt-1">匯川公開資料標示：MEG 永磁同步馬達搭配 ES680 電液伺服，相較傳統方案可降低能耗超過 30%。此數字不是每一台機器的保證值。</p>
-    <button @click="applyInovanceReference" class="mt-3 rounded-xl bg-blue-700 px-4 py-2 font-black text-white">套用 30% 節能參考值</button>
+    <b>參考節能情境</b>
+    <p class="mt-1">先設定預估節能率，再套用至 EH-DS 平均功率。正式評估仍建議改用現場實測值。</p>
+    <div class="mt-3 flex items-end gap-2">
+      <label class="flex-1 font-bold">預估節能率 (%)<input v-model.number="energy.referenceRate" type="number" min="0" max="100" step="1" class="mt-1 w-full rounded border p-2 text-sm"></label>
+      <button @click="applyEnergyReference" class="rounded-xl bg-blue-700 px-4 py-2.5 font-black text-white">套用 {{energy.referenceRate||0}}%</button>
+    </div>
   </div>
   <div class="card p-4">
     <div class="grid grid-cols-2 gap-2">
-      <label class="text-[10px]">EH 大同系統平均 kW<input v-model.number="energy.oldKw" type="number" class="mt-1 w-full rounded border p-2"></label>
-      <label class="text-[10px]">EH-DS 匯川系統平均 kW<input v-model.number="energy.newKw" type="number" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">EH 傳統系統平均 kW<input v-model.number="energy.oldKw" type="number" class="mt-1 w-full rounded border p-2"></label>
+      <label class="text-[10px]">EH-DS 節能系統平均 kW<input v-model.number="energy.newKw" type="number" class="mt-1 w-full rounded border p-2"></label>
       <label class="text-[10px]">電價 NT$/kWh<input v-model.number="energy.price" type="number" step="0.01" class="mt-1 w-full rounded border p-2"></label>
       <label class="text-[10px]">額外投資 NT$<input v-model.number="energy.extra" type="number" class="mt-1 w-full rounded border p-2"></label>
       <label class="text-[10px]">每天 hr<input v-model.number="energy.hours" type="number" class="mt-1 w-full rounded border p-2"></label>
@@ -595,8 +598,7 @@ input,select,textarea{min-height:42px}
     <div class="card bg-emerald-50 p-4 text-emerald-800">預估年省<br><b class="text-lg">NT$ {{tco.saving.toLocaleString()}}</b><br><span class="text-[10px] font-black">節能 {{tco.savingRate}}%</span></div>
     <div class="card bg-amber-50 p-4 text-amber-800">回收期<br><b class="text-lg">{{tco.payback}}</b></div>
   </div>
-  <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[10px] text-amber-900">廠牌／系統名稱依本次比較需求呈現，實際出貨配備請以 OMC 訂單與銘牌為準。請優先輸入現場電表的整機平均功率；只使用馬達銘牌功率可能高估或低估節能效益。</div>
-  <div class="text-[9px] leading-relaxed text-slate-500">資料來源：<a class="text-blue-700 underline" href="https://www.omc-injection.com.tw/products" target="_blank">OMC EH-DS 產品頁</a>、<a class="text-blue-700 underline" href="https://www.inovance.com/global/content/details_815_403240.html" target="_blank">匯川 MEG 系列官方資料</a>、<a class="text-blue-700 underline" href="https://www.tatung.com/en/products/Index/364" target="_blank">大同馬達產品資料</a>。</div>
+  <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[10px] text-amber-900">節能率可作為前期情境試算，並非保證值。請優先輸入現場電表的整機平均功率；只使用馬達銘牌功率可能高估或低估節能效益。</div>
 </section>
 
 <!-- REPORT -->
@@ -713,7 +715,7 @@ input,select,textarea{min-height:42px}
       <span v-if="capacityResult.orderQty>0"> ｜ 訂單 {{fmt(capacityResult.orderQty)}} pcs：約 {{capacityResult.productionDays}} 工作天 ｜ 建議新料 {{capacityResult.totalVirginKg}} kg</span>
     </div>
 
-    <div v-if="tco" class="mt-2 rbox"><div class="rtitle text-amber-800">8｜TCO</div>EH 大同系統年電費 NT$ {{tco.oldCost.toLocaleString()}} ｜ EH-DS 匯川系統 NT$ {{tco.newCost.toLocaleString()}} ｜ 節能 {{tco.savingRate}}% ｜ 年省 NT$ {{tco.saving.toLocaleString()}} ｜ 回收期 {{tco.payback}}</div>
+    <div v-if="tco" class="mt-2 rbox"><div class="rtitle text-amber-800">8｜TCO</div>EH 傳統系統年電費 NT$ {{tco.oldCost.toLocaleString()}} ｜ EH-DS 節能系統 NT$ {{tco.newCost.toLocaleString()}} ｜ 節能 {{tco.savingRate}}% ｜ 年省 NT$ {{tco.saving.toLocaleString()}} ｜ 回收期 {{tco.payback}}</div>
 
     <div class="mt-2 border-t pt-1 text-[7.5px] leading-tight text-slate-500">
       本報告為 OMC 前期 AI 選型摘要。必選條件為客戶指定或產品類別觸發的硬條件；其餘為工程推薦。正式報價 / 下單前仍須依 OMC 最新正式規格、模具圖面、原料 TDS 與試模結果確認。PS 塑化能力不等同所有材料實際塑化能力。產能依 Cycle、穴數、稼動率、良品率估算；原料依訂單良率、水口回收與設定損耗估算。
@@ -828,7 +830,7 @@ createApp({
   cad:{name:'',status:'',ok:false,widthMm:null,heightMm:null},
   injectionChoice:{unit:'',diameter:null},
   tuning:{defect:'splay',note:''},trials:[],
-  energy:{oldKw:null,newKw:null,price:null,extra:0,hours:20,days:300},
+  energy:{oldKw:null,newKw:null,referenceRate:30,price:null,extra:0,hours:20,days:300},
   capacity:{uptime:90,yieldRate:98,hoursDay:20,daysMonth:26,orderQty:1000000,startupLossPct:2,runnerRecyclePct:0},
   project:{company:'',contact:'',name:'PET Test Tube',owner:''}
  }},
@@ -936,7 +938,7 @@ createApp({
  },
  methods:{
   fmt(v){const n=Number(v)||0;return Math.round(n).toLocaleString('zh-TW')},
-  applyInovanceReference(){const oldKw=Math.max(0,Number(this.energy.oldKw)||0);if(oldKw>0)this.energy.newKw=Math.round(oldKw*.7*10)/10},
+  applyEnergyReference(){const oldKw=Math.max(0,Number(this.energy.oldKw)||0),rate=Math.min(100,Math.max(0,Number(this.energy.referenceRate)||0));this.energy.referenceRate=rate;if(oldKw>0)this.energy.newKw=Math.round(oldKw*(1-rate/100)*10)/10},
   chooseInjectionUnit(unit){this.injectionChoice.unit=unit;const ds=(INJECTION_UNIT_DB[unit]||{}).diam||[];if(!ds.includes(Number(this.injectionChoice.diameter)))this.injectionChoice.diameter=null;try{localStorage.setItem('omc_v31_injection_choice',JSON.stringify(this.injectionChoice))}catch(e){}},
   applyInjectionCandidate(x){this.injectionChoice.unit=x.unit;this.injectionChoice.diameter=x.diameter;try{localStorage.setItem('omc_v31_injection_choice',JSON.stringify(this.injectionChoice))}catch(e){}},
   buildCatalogCandidates(machine,vol,shot,pressureClass){
