@@ -24,6 +24,10 @@ input,select,textarea{min-height:42px}
 @media print{
   html,body{margin:0!important;padding:0!important;background:#fff!important}
   .no-print{display:none!important}
+  #app{min-height:0!important;max-width:none!important;margin:0!important;box-shadow:none!important}
+  #app>header,#app>nav{display:none!important}
+  main{margin:0!important;padding:0!important}
+  main>section{margin:0!important;padding:0!important}
   .report-sheet{border:0!important;border-radius:0!important;box-shadow:none!important;margin:0!important}
   .report-one-page{width:210mm!important;height:297mm!important;min-height:0!important;max-height:297mm!important;overflow:hidden!important;padding:6mm!important;box-sizing:border-box!important}
   .avoid-break{break-inside:avoid}
@@ -32,7 +36,7 @@ input,select,textarea{min-height:42px}
 </head>
 <body class="bg-slate-100 text-slate-800">
 <div id="app" v-cloak class="mx-auto min-h-screen max-w-4xl bg-white shadow-xl">
-<header class="sticky top-0 z-30 bg-slate-950 px-4 py-4 text-white shadow-lg">
+<header class="no-print sticky top-0 z-30 bg-slate-950 px-4 py-4 text-white shadow-lg">
   <div class="flex items-center justify-between gap-3">
     <div><div class="text-[10px] font-bold tracking-[.18em] text-blue-300">OMC 超群機械</div><h1 class="text-lg font-black">Smart Injection Advisor</h1><div class="text-[10px] text-slate-400">客戶只回答知道的資料，系統負責把工程問題整理清楚</div></div>
     <span class="rounded bg-blue-600 px-2 py-1 text-xs font-mono">v4.4</span>
@@ -836,7 +840,9 @@ createApp({
  }},
  mounted(){
   try{
-    this.internalMode=new URLSearchParams(window.location.search).get('internal')==='1';
+    const params=new URLSearchParams(window.location.search);
+    this.internalMode=params.get('internal')==='1';
+    if(params.get('print')==='1')this.tab='report';
     this.trials=JSON.parse(localStorage.getItem('omc_v3_trials')||'[]');
     const x=JSON.parse(localStorage.getItem('omc_v31_injection_choice')||'null');if(x)this.injectionChoice=x;
     const p=JSON.parse(localStorage.getItem('omc_report_project')||'null');if(p)this.project={...this.project,...p}
