@@ -158,7 +158,7 @@ input,select,textarea{min-height:42px}
       <div class="text-xs font-black">材料</div>
       <label class="block text-xs font-bold">樹脂種類
         <select v-model="a.material" class="mt-1 w-full rounded-xl border p-2">
-          <option>PP</option><option>ABS</option><option>PET</option><option>PC</option><option>PA</option><option>PA+GF</option><option>PBT</option><option>POM</option><option>其他</option>
+          <option>PP</option><option>PS</option><option>ABS</option><option>PET</option><option>PC</option><option>PA</option><option>PA+GF</option><option>PBT</option><option>POM</option><option>其他</option>
         </select>
       </label>
       <template v-if="path==='engineering'">
@@ -785,6 +785,7 @@ const PLASTICIZING_DB={
 };
 const MATERIAL={
  PP:{density:.91,clamp:.35,pressure:'一般',ld:'20:1級平衡 / 偏深溝方向',ldReason:'PP 流動性通常較好，重點放在穩定塑化與產能；最終依 OMC 螺桿幾何。'},
+ PS:{density:1.05,clamp:.40,pressure:'一般至中等',ld:'20:1級泛用平衡型',ldReason:'PS 多數情況可用泛用螺桿方向；透明外觀、薄壁與高速需求需再依牌號、澆口與 Cycle 確認。'},
  ABS:{density:1.05,clamp:.45,pressure:'中等',ld:'20:1級平衡 / 偏深溝方向',ldReason:'兼顧熔融均勻與避免過度剪切；實際依牌號。'},
  PET:{density:1.38,clamp:.65,pressure:'中高',ld:'約20:1級、低剪切 / 中溝方向',ldReason:'PET 對乾燥、熱歷史與剪切敏感，避免只用更長 L/D 解決塑化。'},
  PC:{density:1.20,clamp:.65,pressure:'高',ld:'約20:1級、低剪切 / 深溝方向',ldReason:'PC 黏度高，需兼顧射壓、均勻熔融與避免過度剪切。'},
